@@ -3,7 +3,6 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
 
-#USER MANAGER 
 class UserManager(BaseUserManager):
     def create_user(self, phone, first_name, password=None, **extra_fields):
         if not phone:
@@ -24,7 +23,6 @@ class UserManager(BaseUserManager):
         return self.create_user(phone, first_name, password, **extra_fields)
 
 
-#USER MODEL
 class User(AbstractBaseUser, PermissionsMixin):
     class Role(models.TextChoices):
         FARMER = 'FARMER', 'Farmer'
@@ -38,6 +36,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     phone = models.CharField(max_length=13, unique=True, validators=[phone_regex])
     first_name = models.CharField(max_length=255)
+    middle_name = models.CharField(max_length=255, null=True, blank=True)
+    last_name = models.CharField(max_length=255, null=True, blank=True)
     email = models.EmailField(blank=True, null=True)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.FARMER)
     location = models.CharField(max_length=255, blank=True, null=True)
@@ -70,17 +70,51 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_police(self):
         return self.role == self.Role.POLICE
+    
+    @property
+    def full_name(self):
+        parts = [self.first_name]
+        if self.middle_name:
+            parts.append(self.middle_name)
+        if self.last_name:
+            parts.append(self.last_name)
+        return ' '.join(parts)
 
 
-# OWNER MODEL 
 class Owner(models.Model):
     user = models.OneToOneField(
         User, 
         on_delete=models.CASCADE, 
         related_name='owner_profile',
-        limit_choices_to={'role': User.Role.FARMER}
+        limit_choices_to={'role': User.Role.FARMER},
+        null=True,  
+        blank=True
+    )
+
+    users = models.ManyToManyField(
+        User, 
+        related_name='owner_profiles',
+        blank=True
+    )
+    primary_owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='primary_owner_profile',
+        null=True,
+        blank=True
     )
  
+    farm_name = models.CharField(max_length=255, blank=True, null=True)
+    farm_location = models.CharField(max_length=255, blank=True, null=True)
+    national_id = models.CharField(max_length=50, blank=True, null=True)
+    registration_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    alternative_phone = models.CharField(max_length=13, blank=True, null=True)
+    emergency_contact = models.CharField(max_length=13, blank=True, null=True)
+    total_animals = models.IntegerField(default=0)
+    total_gps_devices = models.IntegerField(default=0)
+    is_verified = models.BooleanField(default=False)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -89,32 +123,82 @@ class Owner(models.Model):
         verbose_name = 'Mfugaji'
         verbose_name_plural = 'Wafugaji'
     
-    
     def __str__(self):
-        return f"{self.user.first_name}"
+        if self.primary_owner:
+            return f"{self.primary_owner.full_name}'s Farm"
+        elif self.user:
+            return f"{self.user.first_name}'s Farm"
+        return "Unknown Farm"
     
     @property
     def full_name(self):
-        return self.user.first_name
+        if self.primary_owner:
+            return self.primary_owner.full_name
+        elif self.user:
+            return self.user.first_name
+        return "Unknown"
     
     @property
     def phone(self):
-        return self.user.phone
+        if self.primary_owner:
+            return self.primary_owner.phone
+        elif self.user:
+            return self.user.phone
+        return None
     
     @property
     def email(self):
-        return self.user.email
+        if self.primary_owner:
+            return self.primary_owner.email
+        elif self.user:
+            return self.user.email
+        return None
     
     @property
     def location(self):
-        return self.user.location
+        if self.primary_owner:
+            return self.primary_owner.location
+        elif self.user:
+            return self.user.location
+        return None
     
     @property
     def profile_picture(self):
-        return self.user.profile_picture
+        if self.primary_owner:
+            return self.primary_owner.profile_picture
+        elif self.user:
+            return self.user.profile_picture
+        return None
+    
+    @property
+    def all_users(self):
+        return self.users.all()
+    
+    @property
+    def all_users_count(self):
+        return self.users.count()
+    
+    def add_user(self, user):
+        """Add a user to this owner profile"""
+        if user not in self.users.all():
+            self.users.add(user)
+            return True
+        return False
+    
+    def remove_user(self, user):
+        """Remove a user from this owner profile"""
+        if user == self.primary_owner:
+            raise ValueError("Cannot remove primary owner")
+        if user in self.users.all():
+            self.users.remove(user)
+            return True
+        return False
+    
+    def is_member(self, user):
+        """Check if a user is a member of this owner profile"""
+        return self.users.filter(id=user.id).exists()
 
 
-# LIVESTOCK MODEL 
 class Livestock(models.Model):
     class AnimalType(models.TextChoices):
         CATTLE = 'CATTLE', 'Ng\'ombe'
@@ -134,7 +218,7 @@ class Livestock(models.Model):
     type = models.CharField(max_length=20, choices=AnimalType.choices, default=AnimalType.CATTLE)
     color = models.CharField(max_length=100, blank=True, null=True)
     photo = models.ImageField(upload_to='animals/', blank=True, null=True)
-
+    
     owner = models.ForeignKey(
         Owner, 
         on_delete=models.CASCADE, 
@@ -164,19 +248,39 @@ class Livestock(models.Model):
     
     @property
     def owner_name(self):
-        return self.owner.user.first_name
+        if self.owner:
+            if self.owner.primary_owner:
+                return self.owner.primary_owner.full_name
+            elif self.owner.user:
+                return self.owner.user.first_name
+        return "Unknown"
     
     @property
     def owner_phone(self):
-        return self.owner.user.phone
+        if self.owner:
+            if self.owner.primary_owner:
+                return self.owner.primary_owner.phone
+            elif self.owner.user:
+                return self.owner.user.phone
+        return None
     
     @property
     def owner_email(self):
-        return self.owner.user.email
+        if self.owner:
+            if self.owner.primary_owner:
+                return self.owner.primary_owner.email
+            elif self.owner.user:
+                return self.owner.user.email
+        return None
     
     @property
     def owner_location(self):
-        return self.owner.user.location
+        if self.owner:
+            if self.owner.primary_owner:
+                return self.owner.primary_owner.location
+            elif self.owner.user:
+                return self.owner.user.location
+        return None
     
     def __str__(self):
         return f"{self.animal_id} - {self.name}"
@@ -185,7 +289,6 @@ class Livestock(models.Model):
         ordering = ['-created_at']
 
 
-#  GPS DEVICE MODEL 
 class GPSDevice(models.Model):
     class DeviceStatus(models.TextChoices):
         ACTIVE = 'ACTIVE', 'Active'
@@ -194,7 +297,6 @@ class GPSDevice(models.Model):
         LOST = 'LOST', 'Lost'
     
     device_id = models.CharField(max_length=100, unique=True)
-    qr_code = models.CharField(max_length=255, unique=True, blank=True,null=True)
     animal = models.OneToOneField(
         Livestock, 
         on_delete=models.SET_NULL, 
@@ -211,8 +313,6 @@ class GPSDevice(models.Model):
         animal_name = self.animal.name if self.animal else "Unassigned"
         return f"Device {self.device_id} - {animal_name}"
 
-
-# LOCATION MODEL 
 class Location(models.Model):
     animal = models.ForeignKey(Livestock, on_delete=models.CASCADE, related_name='locations')
     device = models.ForeignKey(GPSDevice, on_delete=models.SET_NULL, null=True, related_name='locations')
@@ -227,8 +327,6 @@ class Location(models.Model):
     def __str__(self):
         return f"{self.animal.name} at ({self.latitude}, {self.longitude})"
 
-
-#OWNERSHIP TRANSFER MODEL
 class OwnershipTransfer(models.Model):
     class TransferStatus(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
@@ -254,7 +352,6 @@ class OwnershipTransfer(models.Model):
         return f"{self.animal.name}: {self.from_user.first_name} -> {self.to_user.first_name}"
 
 
-#ALERT MODEL
 class Alert(models.Model):
     class AlertType(models.TextChoices):
         LOST = 'LOST', 'Lost Animal'
@@ -275,8 +372,6 @@ class Alert(models.Model):
     def __str__(self):
         return f"{self.alert_type}: {self.title}"
 
-
-#BROADCAST MESSAGE MODEL
 class BroadcastMessage(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='broadcasts_sent')
     title = models.CharField(max_length=255)
@@ -288,7 +383,6 @@ class BroadcastMessage(models.Model):
         return f"{self.title} - {self.sender.first_name}"
 
 
-# LIVESTOCK REPORT MODEL
 class LivestockReport(models.Model):
     class ReportType(models.TextChoices):
         POPULATION = 'POPULATION', 'Population Report'
@@ -306,5 +400,3 @@ class LivestockReport(models.Model):
     
     def __str__(self):
         return f"{self.report_type} - {self.generated_at.date()}"
-
-

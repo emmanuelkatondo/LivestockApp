@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .views import *
 
 router = DefaultRouter()
-router.register(r'users', UserViewSet, basename='user')  # Add basename
+router.register(r'users', UserViewSet, basename='user')  
 router.register(r'animals', AnimalViewSet, basename='animal')
 router.register(r'devices', GPSDeviceViewSet, basename='device')
 router.register(r'locations', LocationViewSet, basename='location')
