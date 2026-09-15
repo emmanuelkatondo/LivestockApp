@@ -35,7 +35,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
   bool _showLegend = true;
 
   static const LatLng _defaultCenter =
-      LatLng(-6.7924, 39.2083); // Dar es Salaam
+      LatLng(-6.7924, 39.2083); 
 
   @override
   void initState() {

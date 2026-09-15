@@ -208,13 +208,13 @@ class _AnimalListScreenState extends State<AnimalListScreen> {
   String _getAnimalIcon(String type) {
     switch (type) {
       case 'CATTLE':
-        return '🐄';
+        return '';
       case 'GOAT':
-        return '🐐';
+        return '';
       case 'SHEEP':
-        return '🐑';
+        return '';
       default:
-        return '🐾';
+        return '';
     }
   }
 }

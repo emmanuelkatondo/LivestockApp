@@ -103,10 +103,10 @@ class _AllAnimalsScreenState extends State<AllAnimalsScreen> {
     final languageService = Provider.of<LanguageService>(context);
     return BaseScreen(
       title: 'All Animals',
-      selectedIndex: 2, // Index for All Animals in menu
+      selectedIndex: 2, 
       child: Column(
         children: [
-          // Search Bar
+
           Padding(
             padding: const EdgeInsets.all(12),
             child: Container(
@@ -142,7 +142,6 @@ class _AllAnimalsScreenState extends State<AllAnimalsScreen> {
             ),
           ),
 
-          // Filter Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -181,7 +180,6 @@ class _AllAnimalsScreenState extends State<AllAnimalsScreen> {
 
           const SizedBox(height: 8),
 
-          // Body
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -255,14 +253,14 @@ class _AllAnimalsScreenState extends State<AllAnimalsScreen> {
           color: Colors.transparent,
           child: InkWell(
             onTap: () {
-              // Navigate to animal detail
+   
             },
             borderRadius: BorderRadius.circular(16),
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  // Animal Image/Photo
+
                   Container(
                     width: 60,
                     height: 60,
@@ -277,7 +275,6 @@ class _AllAnimalsScreenState extends State<AllAnimalsScreen> {
                   ),
                   const SizedBox(width: 12),
 
-                  // Animal Info
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,7 +311,6 @@ class _AllAnimalsScreenState extends State<AllAnimalsScreen> {
                     ),
                   ),
 
-                  // Status Badge
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

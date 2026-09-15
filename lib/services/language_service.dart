@@ -12,7 +12,7 @@ class LanguageService extends ChangeNotifier {
 
   final Map<String, Map<String, String>> _translations = {
     'en': {
-      // GENERAL
+
       'app_name': 'Livestock Tracking System',
       'welcome': 'Welcome Back!',
       'login': 'Login',
@@ -25,7 +25,7 @@ class LanguageService extends ChangeNotifier {
       'forgot_password': 'Forgot Password?',
       'dont_have_account': "Don't have an account?",
       'already_have_account': 'Already have an account?',
-      'Address': 'Address',
+      'address': 'Address',
       'select_language': 'Select Language',
       'english': 'English',
       'swahili': 'Kiswahili',
@@ -44,7 +44,6 @@ class LanguageService extends ChangeNotifier {
       'optional': 'Optional',
       'email': 'Email',
       'language': 'Language',
-      'address': 'Address',
       'location': 'Location',
       'create_account': 'Create Account',
       'login_to_continue': 'Login to continue',
@@ -154,12 +153,12 @@ class LanguageService extends ChangeNotifier {
       'qr_hint': 'Scan QR code if you have one',
       'all_required_fields': 'Please fill all required fields',
       'registration_success': 'Your registration has completed successfully',
-      'add_new_police_officer': 'Add New Police Officer',
+      'add_new_police_officer': 'Add New Law Enforcement Officer',
       'add_police_subtitle':
-          'Fill in the details to add a police officer to the system',
+          'Fill in the details to add a law enforcement officer to the system',
       'police_added_success': 'Police officer added successfully',
       'police_add_failed': 'Failed to add police officer',
-      'add_police_button': 'Add Police',
+      'add_police_button': 'Add Law Enforcement officer',
       'phone_helper': 'Example: 255712345678 or 0712345678',
       'all': 'All',
       'no_animals_found': 'No animals found',
@@ -179,14 +178,80 @@ class LanguageService extends ChangeNotifier {
       'qr_code_optional': 'QR Code (Optional)',
       'link_device_button': 'Link Device',
 
-      // DASHBOARD
+      
+      'first_name': 'First Name',
+      'last_name': 'Last Name',
+      'middle_name': 'Middle Name',
+      'first_name_required': 'First name is required',
+      'last_name_required': 'Last name is required',
+      'first_name_min_length': 'First name must be at least 3 characters',
+      'first_name_max_length': 'First name must be less than 10 characters',
+      'first_name_letters_only': 'First name can only contain letters',
+      'last_name_min_length': 'Last name must be at least 3 characters',
+      'last_name_max_length': 'Last name must be less than 10 characters',
+      'last_name_letters_only': 'Last name can only contain letters',
+      'middle_name_min_length': 'Middle name must be at least 3 characters',
+      'middle_name_max_length': 'Middle name must be less than 10 characters',
+      'middle_name_letters_only': 'Middle name can only contain letters',
+
+
+      'phone_required': 'Phone number is required',
+      'phone_invalid_format': 'Phone number must be 9 digits',
+      'phone_invalid_network':
+          'Invalid network prefix. Use Vodacom, Airtel, Tigo (yas), or Halotel',
+
+      'location_required': 'Location is required',
+      'location_min_length': 'Location must be at least 3 characters',
+
+   
+      'password_required': 'Password is required',
+      'password_min_length_8': 'Password must be at least 8 characters',
+      'password_uppercase':
+          'Password must contain at least one uppercase letter',
+      'password_lowercase':
+          'Password must contain at least one lowercase letter',
+      'password_number': 'Password must contain at least one number',
+      'password_special':
+          'Password must contain at least one special character (!@#\$%^&*(),.?":{}|<>)',
+
+      'email_invalid': 'Please enter a valid email address',
+
+      'confirm_password_required': 'Please confirm your password',
+      'password_min_hint': '8+ chars: A-Z, a-z, 0-9, !@#',
+
+      'network_vodacom': 'Vodacom',
+      'network_airtel': 'Airtel',
+      'network_tigo': 'Tigo (yas)',
+      'network_halotel': 'Halotel',
+
+
       'farmer_dashboard': 'Farmer Dashboard',
       'officer_dashboard': 'Officer Dashboard',
       'police_dashboard': 'Police Dashboard',
       'dashboard': 'Dashboard',
       'habari': 'Hello',
 
-      // STATS CARDS
+      'law_enforcement_dashboard': 'Law Enforcement Dashboard',
+      'good_morning': 'Good Morning',
+      'total_cases': 'Total Cases',
+      'stolen_reported': 'Stolen Reported',
+      'recovered': 'Recovered',
+      'pending': 'Pending',
+      'quick_actions': 'Quick Actions',
+      'report_stolen': 'Report Stolen',
+      'search_animal': 'Search Animal',
+      'view_map': 'View Map',
+      'recent_reports': 'Recent Reports',
+      'new': 'New',
+      'view_all_reports': 'View All Reports',
+      'no_recent_reports': 'No recent reports',
+      'animal_details': 'Animal Details',
+      'last_known_location': 'Last Known Location',
+      'latitude': 'Latitude',
+      'longitude': 'Longitude',
+      'view_on_map': 'View on Map',
+
+    
       'total_animals': 'Total Animals',
       'active_gps': 'Active GPS',
       'unread_alerts': 'Unread Alerts',
@@ -197,7 +262,6 @@ class LanguageService extends ChangeNotifier {
       'total_farmers': 'Total Farmers',
       'view_all': 'View All',
 
-      //  ANIMALS
       'my_animals': 'My Animals',
       'all_animals': 'All Animals',
       'add_animal': 'Add Animal',
@@ -227,7 +291,7 @@ class LanguageService extends ChangeNotifier {
       'mark_as_dead': 'Mark as Dead',
       'report_as_stolen': 'Report as Stolen',
 
-      //  LOCATION & MAP
+     
       'location_history': 'Location History',
       'view_on_map': 'View on Map',
       'no_location_data': 'No location data available',
@@ -238,11 +302,10 @@ class LanguageService extends ChangeNotifier {
       'center_on_map': 'Center on Map',
       'last_seen': 'Last Seen',
       'speed': 'Speed',
-      'last_known_location': 'Last Known Location',
       'reported_on': 'Reported On',
       'open_in_maps': 'Open in Maps',
 
-      //TRANSFERS
+
       'transfer_ownership': 'Transfer Ownership',
       'transfer_requests': 'Transfer Requests',
       'transfer_details': 'Transfer Details',
@@ -264,18 +327,21 @@ class LanguageService extends ChangeNotifier {
       'reject': 'Reject',
       'delete_record': 'Delete Record',
 
-      //  ALERTS
       'alerts': 'Alerts',
       'all_alerts': 'All Alerts',
       'no_alerts': 'No alerts',
       'mark_as_read': 'Mark as Read',
-      'new': 'NEW',
       'theft_alert': 'Theft Alert',
       'lost_animal_alert': 'Lost Animal Alert',
       'general_alert': 'General Alert',
       'new_alerts': 'New Alerts',
+      'proximity_alarm_title': 'Animal distance alarm',
+      'proximity_alarm_attention': 'Distance alarm needs attention',
+      'proximity_alarm_message': 'These animals are more than 5m apart:',
+      'proximity_alarm_location_problem':
+          'Keep internet on to use the animal distance alarm.',
+      'stop_alarm': 'Stop alarm',
 
-      // REPORTS
       'reports': 'Reports',
       'generate_report': 'Generate Report',
       'population_report': 'Population Report',
@@ -288,7 +354,6 @@ class LanguageService extends ChangeNotifier {
       'animals_by_status': 'Animals by Status',
       'generated_at': 'Generated at',
 
-      // BROADCAST
       'send_broadcast': 'Send Broadcast',
       'broadcast_info':
           'This message will be sent to all farmers in the system',
@@ -298,7 +363,6 @@ class LanguageService extends ChangeNotifier {
       'broadcast_sent_successfully': 'Broadcast sent successfully',
       'broadcast_failed': 'Failed to send broadcast',
 
-      //  FARMERS LIST
       'farmers': 'Farmers',
       'farmers_list': 'Farmers List',
       'no_farmers_found': 'No farmers found',
@@ -311,26 +375,22 @@ class LanguageService extends ChangeNotifier {
       'basic_info': 'Basic Information',
       'animals_count': 'Animals',
 
-      // PROFILE
       'profile': 'Profile',
       'my_profile': 'My Profile',
       'settings': 'Settings',
 
-      //  POLICE
       'theft_alerts': 'Theft Alerts',
       'add_police': 'Add Police Officer',
       'police_officer': 'Police Officer',
       'work_location': 'Work Location',
-      'police': 'Police',
+      'Law_enforcement': 'Law Enforcement',
 
-      // ACTIVITY LOG
       'activity_log': 'Activity Log',
       'no_logs_found': 'No logs found',
       'activity_type': 'Activity Type',
       'description': 'Description',
       'timestamp': 'Timestamp',
 
-      //  DRAWER MENU
       'my_animals_menu': 'My Animals',
       'add_animal_menu': 'Add Animal',
       'transfer_requests_menu': 'Transfer Requests',
@@ -340,13 +400,12 @@ class LanguageService extends ChangeNotifier {
       'broadcast_menu': 'Broadcast',
       'reports_menu': 'Reports',
       'activity_log_menu': 'Activity Log',
-      'police_menu': 'Police',
+      'police_menu': 'Law Enforcement',
       'stolen_animals_menu': 'Stolen Animals',
       'theft_alerts_menu': 'Theft Alerts',
       'profile_menu': 'My Profile',
       'logout_menu': 'Logout',
 
-      // ========== BUTTONS ==========
       'save': 'Save',
       'edit': 'Edit',
       'delete': 'Delete',
@@ -356,9 +415,12 @@ class LanguageService extends ChangeNotifier {
       'next': 'Next',
       'submit': 'Submit',
       'continue': 'Continue',
+
+      'family_members_menu': 'Family Members',
     },
     'sw': {
-      // GENERAL
+      'family_members_menu': 'Washiriki wa Familia',
+      // ========== GENERAL ==========
       'app_name': 'Mfumo wa Kufuatilia Mifugo',
       'welcome': 'Karibu Tena!',
       'login': 'Ingia',
@@ -371,7 +433,7 @@ class LanguageService extends ChangeNotifier {
       'forgot_password': 'Umesahau Nywila?',
       'dont_have_account': 'Huna akaunti?',
       'already_have_account': 'Tayari una akaunti?',
-      'Addres': 'Eneo',
+      'address': 'Eneo',
       'select_language': 'Chagua Lugha',
       'english': 'Kiingereza',
       'swahili': 'Kiswahili',
@@ -390,7 +452,6 @@ class LanguageService extends ChangeNotifier {
       'optional': 'Si lazima',
       'email': 'Barua pepe',
       'language': 'Lugha',
-      'address': 'Eneo',
       'location': 'Eneo',
       'create_account': 'Fungua Akaunti',
       'login_to_continue': 'Ingia ili kuendelea',
@@ -479,21 +540,21 @@ class LanguageService extends ChangeNotifier {
       'registration_failed_try_again': 'Usajili ulishindikana. Jaribu tena.',
       'message_title_required': 'Tafadhali weka kichwa cha ujumbe',
       'message_required': 'Tafadhali weka ujumbe wako',
-      'broadcast_success_all': 'Ujumbe umetumwa kikamilifu kwa wakulima wote',
-      'broadcast_header': 'Ujumbe kwa Wakulima Wote',
+      'broadcast_success_all': 'Ujumbe umetumwa kikamilifu kwa wafugaji wote',
+      'broadcast_header': 'Ujumbe kwa Wafugaji Wote',
       'broadcast_subtitle':
-          'Ujumbe wako utafika kwa wakulima wote waliosajiliwa',
+          'Ujumbe wako utafika kwa wafugaji wote waliosajiliwa',
       'broadcast_description':
-          'Ujumbe huu utatumwa kwa wakulima wote waliosajiliwa kwenye mfumo.',
+          'Ujumbe huu utatumwa kwa wafugaji wote waliosajiliwa kwenye mfumo.',
       'message_title': 'Kichwa cha Ujumbe',
-      'message_title_hint': 'Mfano: TAARIFA MUHIMU KWA WAKULIMA',
+      'message_title_hint': 'Mfano: TAARIFA MUHIMU KWA WAFUGAJI',
       'your_message': 'Ujumbe Wako',
       'message_hint':
           'Andika ujumbe wako hapa...\n\nMfano: Kila mkulima atakayefika kwenye mkutano wa tarehe 15 atapata mafunzo ya kisasa ya ufugaji...',
       'message_preview': 'Muundo wa Ujumbe',
       'preview_empty': 'Muundo wa ujumbe wako utaonekana hapa',
       'send_message': 'Tuma Ujumbe',
-      'broadcast_footer': 'Ujumbe utafika kwa wakulima wote waliosajiliwa',
+      'broadcast_footer': 'Ujumbe utafika kwa wafugaji wote waliosajiliwa',
       'take_photo': 'Piga Picha',
       'choose_from_gallery': 'Chagua kutoka Gallery',
       'device_id_hint': 'Mfano: GPS001, GPS002, nk',
@@ -502,14 +563,14 @@ class LanguageService extends ChangeNotifier {
       'registration_success': 'Usajili wako umekamilika kikamilifu',
       'add_new_police_officer': 'Ongeza Afisa Polisi Mpya',
       'add_police_subtitle':
-          'Jaza taarifa zote ili kuongeza afisa polisi kwenye mfumo',
-      'police_added_success': 'Afisa Polisi ameongezwa kikamilifu',
+          'Jaza taarifa zote ili kuongeza afisa  kwenye mfumo',
+      'police_added_success': 'Afisa ameongezwa kikamilifu',
       'police_add_failed': 'Imeshindwa kuongeza afisa polisi',
-      'add_police_button': 'Ongeza Polisi',
+      'add_police_button': 'Ongeza Afisa ',
       'phone_helper': 'Mfano: 255712345678 au 0712345678',
       'all': 'Wote',
       'no_animals_found': 'Hakuna wanyama waliopatikana',
-      'no_farmers_found_title': 'Hakuna wakulima waliopatikana',
+      'no_farmers_found_title': 'Hakuna wafugaji waliopatikana',
       'name_not_available': 'Jina halijapatikana',
       'phone_not_available': 'Namba haijapatikana',
       'no_animals_yet': 'Hakuna wanyama bado',
@@ -524,14 +585,82 @@ class LanguageService extends ChangeNotifier {
       'qr_code_optional': 'QR Code (Si lazima)',
       'link_device_button': 'Unganisha Device',
 
-      // DASHBOARD
+
+      'first_name': 'Jina la Kwanza',
+      'last_name': 'Jina la Mwisho',
+      'middle_name': 'Jina la Kati',
+      'first_name_required': 'Jina la kwanza linahitajika',
+      'last_name_required': 'Jina la mwisho linahitajika',
+      'first_name_min_length':
+          'Jina la kwanza lazima liwe na herufi 3 au zaidi',
+      'first_name_max_length': 'Jina la kwanza lazima liwe chini ya herufi 10',
+      'first_name_letters_only': 'Jina la kwanza lazima liwe na herufi tu',
+      'last_name_min_length': 'Jina la mwisho lazima liwe na herufi 3 au zaidi',
+      'last_name_max_length': 'Jina la mwisho lazima liwe chini ya herufi 10',
+      'last_name_letters_only': 'Jina la mwisho lazima liwe na herufi tu',
+      'middle_name_min_length': 'Jina la kati lazima liwe na herufi 3 au zaidi',
+      'middle_name_max_length': 'Jina la kati lazima liwe chini ya herufi 10',
+      'middle_name_letters_only': 'Jina la kati lazima liwe na herufi tu',
+
+
+      'phone_required': 'Namba ya simu inahitajika',
+      'phone_invalid_format': 'Namba ya simu lazima iwe na tarakimu 9',
+      'phone_invalid_network':
+          'Network isiyo sahihi. Tumia Vodacom, Airtel, Tigo (yas), au Halotel',
+
+
+      'location_required': 'Eneo linahitajika',
+      'location_min_length': 'Eneo lazima liwe na herufi 3 au zaidi',
+
+      'password_required': 'Nywila inahitajika',
+      'password_min_length_8': 'Nywila lazima iwe na herufi 8 au zaidi',
+      'password_uppercase': 'Nywila lazima iwe na angalau herufi kubwa moja',
+      'password_lowercase': 'Nywila lazima iwe na angalau herufi ndogo moja',
+      'password_number': 'Nywila lazima iwe na angalau namba moja',
+      'password_special':
+          'Nywila lazima iwe na angalau alama maalum (!@#\$%^&*(),.?":{}|<>)',
+
+
+      'email_invalid': 'Tafadhali weka barua pepe sahihi',
+
+      'confirm_password_required': 'Tafadhali thibitisha nywila yako',
+      'password_min_hint': '8+ herufi: A-Z, a-z, 0-9, !@#',
+
+      'network_vodacom': 'Vodacom',
+      'network_airtel': 'Airtel',
+      'network_tigo': 'Tigo (yas)',
+      'network_halotel': 'Halotel',
+
       'farmer_dashboard': 'Dashibodi ya Mkulima',
       'officer_dashboard': 'Dashibodi ya Afisa',
       'police_dashboard': 'Dashibodi ya Polisi',
       'dashboard': 'Dashibodi',
       'habari': 'Habari',
 
-      // STATS CARDS
+      'law_enforcement_dashboard': 'Dashibodi ya Ulinzi na Usalama',
+      'good_morning': 'Habari za Asubuhi',
+      'total_cases': 'Jumla ya Kesi',
+      'stolen_reported': 'Imeripotiwa Kuibwa',
+      'recovered': 'Imepatikana',
+      'pending': 'Inasubiri',
+      'quick_actions': 'Vitendo vya Haraka',
+      'report_stolen': 'Ripoti Wizi',
+      'search_animal': 'Tafuta Mnyama',
+      'view_map': 'Tazama Ramani',
+      'recent_reports': 'Ripoti za Hivi Karibuni',
+      'new': 'Mpya',
+      'view_all_reports': 'Ona Ripoti Zote',
+      'no_recent_reports': 'Hakuna ripoti za hivi karibuni',
+      'animal_details': 'Maelezo ya Mnyama',
+      'last_known_location': 'Mahali pa Mwisho',
+      'latitude': 'Latitudo',
+      'longitude': 'Longitudo',
+      'view_on_map': 'Tazama kwenye Ramani',
+      'stolen': 'Imeibwa',
+      'reported_on': 'Iliripotiwa Tarehe',
+      'owner': 'Mmiliki',
+      'animal_id': 'Namba ya Mnyama',
+
       'total_animals': 'Jumla ya Wanyama',
       'active_gps': 'GPS Hai',
       'unread_alerts': 'Arifa Hazijasomwa',
@@ -539,10 +668,9 @@ class LanguageService extends ChangeNotifier {
       'stolen_animals_reported': 'Wanyama Walioripotiwa Kuibwa',
       'stolen_animals_list': 'Orodha ya Wanyama Walioibwa',
       'no_stolen_animals': 'Hakuna wanyama walioripotiwa kuibwa',
-      'total_farmers': 'Jumla ya Wakulima',
+      'total_farmers': 'Jumla ya Wafugaji',
       'view_all': 'Ona Yote',
 
-      // ANIMALS
       'my_animals': 'Wanyama Wangu',
       'all_animals': 'Wanyama Wote',
       'add_animal': 'Ongeza Mnyama',
@@ -572,7 +700,6 @@ class LanguageService extends ChangeNotifier {
       'mark_as_dead': 'Weka kama Amekufa',
       'report_as_stolen': 'Ripoti kama Ameibwa',
 
-      //  LOCATION and MAP
       'location_history': 'Historia ya Mahali',
       'view_on_map': 'Tazama kwenye Ramani',
       'no_location_data': 'Hakuna data za mahali',
@@ -583,11 +710,9 @@ class LanguageService extends ChangeNotifier {
       'center_on_map': 'Weka Katikati',
       'last_seen': 'Ilionekana Mwisho',
       'speed': 'Kasi',
-      'last_known_location': 'Mahali pa Mwisho',
-      'reported_on': 'Iliripotiwa',
+      'reported_on': 'Iliripotiwa Tarehe',
       'open_in_maps': 'Fungua kwenye Ramani',
 
-      //  TRANSFERS
       'transfer_ownership': 'Hamisha Umiliki',
       'transfer_requests': 'Maombi ya Uhamisho',
       'transfer_details': 'Maelezo ya Uhamisho',
@@ -609,18 +734,22 @@ class LanguageService extends ChangeNotifier {
       'reject': 'Kataa',
       'delete_record': 'Futa Rekodi',
 
-      // ALERTS
       'alerts': 'Arifa',
       'all_alerts': 'Arifa Zote',
       'no_alerts': 'Hakuna arifa',
       'mark_as_read': 'Weka kama Imesomwa',
-      'new': 'MPYA',
       'theft_alert': 'Arifa ya Wizi',
       'lost_animal_alert': 'Arifa ya Mnyama Aliyepotea',
       'general_alert': 'Arifa ya Jumla',
       'new_alerts': 'Arifa Mpya',
+      'proximity_alarm_title': 'Alarm ya umbali wa mnyama',
+      'proximity_alarm_attention': 'Alarm ya umbali inahitaji ruhusa',
+      'proximity_alarm_message': 'Wanyama hawa wamezidiana zaidi ya mita 5:',
+      'proximity_alarm_location_problem':
+          'Washa intaneti ili kutumia alarm ya umbali wa wanyama.',
+      'stop_alarm': 'Zima alarm',
 
-      //REPORTS
+    
       'reports': 'Ripoti',
       'generate_report': 'Tengeneza Ripoti',
       'population_report': 'Ripoti ya Idadi',
@@ -633,7 +762,7 @@ class LanguageService extends ChangeNotifier {
       'animals_by_status': 'Wanyama kwa Hali',
       'generated_at': 'Imetengenezwa',
 
-      // BROADCAST
+   
       'send_broadcast': 'Tuma Ujumbe',
       'broadcast_info': 'Ujumbe huu utatumwa kwa wakulima wote waliosajiliwa',
       'title': 'Kichwa',
@@ -642,44 +771,44 @@ class LanguageService extends ChangeNotifier {
       'broadcast_sent_successfully': 'Ujumbe umetumwa kikamilifu',
       'broadcast_failed': 'Imeshindwa kutuma ujumbe',
 
-      // FARMERS LIST
-      'farmers': 'Wakulima',
-      'farmers_list': 'Orodha ya Wakulima',
-      'no_farmers_found': 'Hakuna wakulima waliopatikana',
-      'edit_farmer': 'Hariri Mkulima',
-      'delete_farmer': 'Futa Mkulima',
-      'farmer_details': 'Maelezo ya Mkulima',
+      // ========== FARMERS LIST ==========
+      'farmers': 'Wafugaji',
+      'farmers_list': 'Orodha ya Wafugaji',
+      'no_farmers_found': 'Hakuna wafugaji waliopatikana',
+      'edit_farmer': 'Hariri wafugaji',
+      'delete_farmer': 'Futa wafugaji',
+      'farmer_details': 'Maelezo ya wafugaji',
       'joined': 'Alijiunga',
       'joined_date': 'Tarehe ya Kujiunga',
       'role': 'Wadhifa',
       'basic_info': 'Taarifa za Msingi',
       'animals_count': 'Wanyama',
 
-      //  PROFILE
+      // ========== PROFILE ==========
       'profile': 'Wasifu',
       'my_profile': 'Wasifu Wangu',
       'settings': 'Mipangilio',
 
-      // POLICE
+      // ========== POLICE ==========
       'theft_alerts': 'Arifa za Wizi',
       'add_police': 'Ongeza Afisa Polisi',
       'police_officer': 'Afisa Polisi',
       'work_location': 'Eneo la Kazi',
       'police': 'Polisi',
 
-      // ACTIVITY LOG
+      // ========== ACTIVITY LOG ==========
       'activity_log': 'Rekodi ya Shughuli',
       'no_logs_found': 'Hakuna rekodi zilizopatikana',
       'activity_type': 'Aina ya Shughuli',
       'description': 'Maelezo',
       'timestamp': 'Muda',
 
-      //  DRAWER MENU
+      // ========== DRAWER MENU ==========
       'my_animals_menu': 'Wanyama Wangu',
       'add_animal_menu': 'Ongeza Mnyama',
       'transfer_requests_menu': 'Maombi ya Uhamisho',
       'alerts_menu': 'Arifa',
-      'farmers_menu': 'Wakulima',
+      'farmers_menu': 'Wafugaji',
       'all_animals_menu': 'Wanyama Wote',
       'broadcast_menu': 'Tuma Ujumbe',
       'reports_menu': 'Ripoti',
@@ -690,7 +819,7 @@ class LanguageService extends ChangeNotifier {
       'profile_menu': 'Wasifu Wangu',
       'logout_menu': 'Toka',
 
-      // BUTTONS
+      // ========== BUTTONS ==========
       'save': 'Hifadhi',
       'edit': 'Hariri',
       'delete': 'Futa',
@@ -740,7 +869,6 @@ class LanguageService extends ChangeNotifier {
   String _normalizeKey(String key) {
     const aliases = {
       'Addres': 'address',
-      'Address': 'address',
       'create account': 'create_account',
       'login to continue': 'login_to_continue',
       'view all': 'view_all',

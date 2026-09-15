@@ -53,21 +53,19 @@ class _OfficerDashboardState extends State<OfficerDashboard> {
     });
 
     try {
-      // Load farmers
+
       final farmersResponse =
           await _apiService.get('${AppConstants.users}farmers/');
       if (farmersResponse.statusCode == 200) {
         _totalFarmers = (farmersResponse.data as List).length;
       }
 
-      // Load police officers
       final policeResponse =
           await _apiService.get('${AppConstants.users}police/');
       if (policeResponse.statusCode == 200) {
         _totalPolice = (policeResponse.data as List).length;
       }
 
-      // Load animals
       final animalsResponse = await _apiService.get(AppConstants.animals);
       if (animalsResponse.statusCode == 200) {
         final List<dynamic> animalsData = animalsResponse.data['results'] ?? [];
@@ -76,7 +74,6 @@ class _OfficerDashboardState extends State<OfficerDashboard> {
             animalsData.where((a) => a['status'] == 'STOLEN').length;
       }
 
-      // Load unread alerts
       final alertsResponse =
           await _apiService.get('${AppConstants.alerts}?is_read=false');
       if (alertsResponse.statusCode == 200) {
@@ -127,7 +124,7 @@ class _OfficerDashboardState extends State<OfficerDashboard> {
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
-                        // Stats Cards - Responsive
+
                         isSmallScreen
                             ? Column(
                                 children: [
@@ -224,7 +221,6 @@ class _OfficerDashboardState extends State<OfficerDashboard> {
 
                         const SizedBox(height: 24),
 
-                        // Menu Grid
                         GridView.count(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),

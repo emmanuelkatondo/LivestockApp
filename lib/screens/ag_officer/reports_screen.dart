@@ -23,19 +23,46 @@ class _ReportsScreenState extends State<ReportsScreen> {
     setState(() {
       _isGenerating = true;
       _errorMessage = null;
+      _reportData = null;
     });
 
     try {
-      final response = await _apiService
-          .post('${AppConstants.reports}generate_population/', {});
+      final now = DateTime.now();
+      final startDate = now.subtract(const Duration(days: 30));
+
+      final payload = {
+        'start_date': startDate.toIso8601String(),
+        'end_date': now.toIso8601String(),
+      };
+ 
+      print(' Generating report with: $payload');
+
+      final response = await _apiService.post(
+        '${AppConstants.reports}generate_population/',
+        payload,
+      );
 
       print('Report response status: ${response.statusCode}');
       print('Report response data: ${response.data}');
 
       if (response.statusCode == 200) {
+
+        final data = response.data;
+
+        final report = {
+          'report_type': data['report_type'] ?? 'POPULATION',
+          'start_date': data['start_date'] ?? startDate.toIso8601String(),
+          'end_date': data['end_date'] ?? now.toIso8601String(),
+          'total_animals': data['total_animals'] ?? 0,
+          'animals_by_type': data['animals_by_type'] ?? {},
+          'animals_by_status': data['animals_by_status'] ?? {},
+          'stolen_reported': data['stolen_reported'] ?? 0,
+          'generated_at': data['generated_at'] ?? now.toIso8601String(),
+        };
         setState(() {
-          _reportData = response.data;
+          _reportData = report;
         });
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(context.tr('report_generated_success')),
@@ -44,14 +71,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
         );
       } else {
         setState(() {
-          _errorMessage =
-              response.data['error'] ?? context.tr('report_generate_failed');
+          _errorMessage = response.data['error'] ??
+              response.data['message'] ??
+              context.tr('report_generate_failed');
         });
       }
     } catch (e) {
       print('Report error: $e');
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = '${context.tr('error')}: $e';
       });
     } finally {
       setState(() {
@@ -66,24 +94,37 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
     return BaseScreen(
       title: 'Reports',
-      selectedIndex: 4, // Index for Reports in menu
+      selectedIndex: 4,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Generate Button
             Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    const Icon(Icons.bar_chart,
-                        size: 48, color: Color(0xFF2E7D32)),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.bar_chart,
+                        size: 48,
+                        color: Color(0xFF2E7D32),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       languageService.translate('population_report'),
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -92,21 +133,39 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       languageService
                           .translate('generate_population_report_desc'),
                       textAlign: TextAlign.center,
-                      style:
-                          TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
+                      height: 50,
                       child: ElevatedButton(
                         onPressed: _isGenerating ? null : _generateReport,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF2E7D32),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         child: _isGenerating
-                            ? const CircularProgressIndicator()
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
                             : Text(
-                                languageService.translate('generate_report')),
+                                languageService.translate('generate_report'),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
                   ],
@@ -118,55 +177,105 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 16),
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.red.shade200),
                   ),
-                  child: Text(
-                    _errorMessage!,
-                    style: TextStyle(color: Colors.red.shade700),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.red),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(color: Colors.red.shade700),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _errorMessage = null;
+                          });
+                        },
+                        child: Icon(
+                          Icons.close,
+                          size: 18,
+                          color: Colors.red.shade400,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
 
             if (_reportData != null) ...[
               const SizedBox(height: 24),
-
-              // Report Results
               Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        languageService.translate('report_results'),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.insert_chart,
+                              color: Color(0xFF2E7D32),
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            languageService.translate('report_results'),
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                      const Divider(),
+                      const Divider(height: 24),
 
                       // Total Animals
-                      _buildReportRow(
-                        languageService.translate('total_animals'),
-                        _reportData!['total_animals'].toString(),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: _buildReportRow(
+                          languageService.translate('total_animals'),
+                          _reportData!['total_animals']?.toString() ?? '0',
+                          isBold: true,
+                          valueColor: Colors.green.shade700,
+                        ),
                       ),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
 
-                      // By Type
                       Text(
                         languageService.translate('animals_by_type'),
                         style: const TextStyle(
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
+                          color: Colors.grey,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      if (_reportData!['animals_by_type'] != null)
+                      if (_reportData!['animals_by_type'] != null &&
+                          (_reportData!['animals_by_type'] as Map).isNotEmpty)
                         ...(_reportData!['animals_by_type']
                                 as Map<String, dynamic>)
                             .entries
@@ -175,19 +284,32 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             _getTypeName(entry.key),
                             entry.value.toString(),
                           );
-                        }).toList(),
+                        }).toList()
+                      else
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            'No animals by type',
+                            style: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
 
-                      // By Status
                       Text(
                         languageService.translate('animals_by_status'),
                         style: const TextStyle(
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
+                          color: Colors.grey,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      if (_reportData!['animals_by_status'] != null)
+                      if (_reportData!['animals_by_status'] != null &&
+                          (_reportData!['animals_by_status'] as Map).isNotEmpty)
                         ...(_reportData!['animals_by_status']
                                 as Map<String, dynamic>)
                             .entries
@@ -197,26 +319,55 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             entry.value.toString(),
                             status: entry.key,
                           );
-                        }).toList(),
+                        }).toList()
+                      else
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            'No animals by status',
+                            style: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
 
-                      const Divider(),
+                      const Divider(height: 24),
 
-                      // Stolen
-                      _buildReportRow(
-                        languageService.translate('stolen_animals'),
-                        _reportData!['stolen_reported'].toString(),
-                        isBold: true,
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red.shade200),
+                        ),
+                        child: _buildReportRow(
+                          languageService.translate('stolen_animals'),
+                          _reportData!['stolen_reported']?.toString() ?? '0',
+                          isBold: true,
+                          valueColor: Colors.red.shade700,
+                        ),
                       ),
 
                       const SizedBox(height: 16),
 
                       // Generated At
-                      Text(
-                        '${languageService.translate('generated_at')}: ${_formatDateTime(DateTime.parse(_reportData!['generated_at']))}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade500,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 14,
+                            color: Colors.grey.shade500,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${languageService.translate('generated_at')}: ${_formatDateTime(_reportData!['generated_at'] != null ? DateTime.parse(_reportData!['generated_at']) : DateTime.now())}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -230,30 +381,45 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Widget _buildReportRow(String label, String value,
-      {String? status, bool isBold = false}) {
-    Color? valueColor;
-    if (status == 'STOLEN') {
-      valueColor = Colors.red;
-    } else if (status == 'ACTIVE') {
-      valueColor = Colors.green;
+      {String? status, bool isBold = false, Color? valueColor}) {
+    // Determine color if not explicitly passed
+    if (valueColor == null && status != null) {
+      switch (status) {
+        case 'STOLEN':
+          valueColor = Colors.red;
+          break;
+        case 'ACTIVE':
+          valueColor = Colors.green;
+          break;
+        case 'SOLD':
+          valueColor = Colors.blue;
+          break;
+        case 'DEAD':
+          valueColor = Colors.red.shade900;
+          break;
+        default:
+          valueColor = Colors.black;
+      }
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
             style: TextStyle(
-              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
+              fontSize: isBold ? 15 : 14,
             ),
           ),
           Text(
             value,
             style: TextStyle(
-              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-              color: valueColor,
+              fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
+              color: valueColor ?? Colors.black,
+              fontSize: isBold ? 15 : 14,
             ),
           ),
         ],

@@ -3,19 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../services/api_service.dart';
-import '../../services/auth_service.dart';
+import '../../services/animal_proximity_alarm_service.dart';
 import '../../services/language_service.dart';
 import '../../models/animal_model.dart';
 import '../../models/location_model.dart';
-import '../../models/user_model.dart';
 import '../../utils/constants.dart';
 import '../base_screen.dart';
 import 'add_animal_screen.dart';
 import 'animal_list_screen.dart';
-import 'alerts_screen.dart';
-import 'transfer_ownership_screen.dart';
 import 'animal_detail_screen.dart';
-import 'transfer_requests_screen.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -26,6 +22,8 @@ class FarmerDashboard extends StatefulWidget {
 
 class _FarmerDashboardState extends State<FarmerDashboard> {
   final ApiService _apiService = ApiService();
+  final AnimalProximityAlarmService _proximityAlarmService =
+      AnimalProximityAlarmService.instance;
 
   List<AnimalModel> _animals = [];
   List<LocationModel> _recentLocations = [];
@@ -37,7 +35,21 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
   @override
   void initState() {
     super.initState();
+    _proximityAlarmService.state.addListener(_onProximityAlarmChanged);
     _loadData();
+    _proximityAlarmService.start();
+  }
+
+  @override
+  void dispose() {
+    _proximityAlarmService.state.removeListener(_onProximityAlarmChanged);
+    super.dispose();
+  }
+
+  void _onProximityAlarmChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _loadData() async {
@@ -162,6 +174,8 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
+                        _buildProximityAlarmBanner(languageService),
+
                         // Stats Cards
                         isSmallScreen
                             ? Column(
@@ -396,6 +410,87 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
         ),
       ),
     );
+  }
+
+  Widget _buildProximityAlarmBanner(LanguageService languageService) {
+    final alarmState = _proximityAlarmService.state.value;
+    if (!alarmState.hasBreaches && !alarmState.hasLocationProblem) {
+      return const SizedBox.shrink();
+    }
+
+    final isDanger = alarmState.hasBreaches;
+    final color = isDanger ? Colors.red : Colors.orange;
+    final title = isDanger
+        ? languageService.translate('proximity_alarm_title')
+        : languageService.translate('proximity_alarm_attention');
+    final message = isDanger
+        ? _buildProximityAlarmMessage(alarmState, languageService)
+        : alarmState.message ??
+            languageService.translate('proximity_alarm_location_problem');
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.shade200),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            isDanger ? Icons.alarm_on : Icons.location_off,
+            color: color.shade700,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: color.shade800,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: TextStyle(color: color.shade900, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          if (alarmState.isAlarmPlaying) ...[
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: _proximityAlarmService.stopCurrentAlarm,
+              child: Text(languageService.translate('stop_alarm')),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _buildProximityAlarmMessage(
+    AnimalProximityAlarmState alarmState,
+    LanguageService languageService,
+  ) {
+    final nearestBreaches = alarmState.breaches.take(2).map((breach) {
+      final otherAnimal = breach.otherAnimal;
+      final label = otherAnimal == null
+          ? breach.animal.name
+          : '${breach.animal.name} - ${otherAnimal.name}';
+      return '$label (${breach.distanceMeters.toStringAsFixed(1)}m)';
+    }).join(', ');
+    final remaining = alarmState.breaches.length - 2;
+    final extraText = remaining > 0 ? ' +$remaining' : '';
+    return '${languageService.translate('proximity_alarm_message')} $nearestBreaches$extraText';
   }
 
   Widget _buildEmptyState(LanguageService languageService) {

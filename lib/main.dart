@@ -65,13 +65,11 @@ class MyApp extends StatelessWidget {
               '/login': (context) => const LoginScreen(),
               '/register': (context) => const RegisterScreen(),
 
-              // Farmer Routes
               '/farmer': (context) => const FarmerDashboard(),
               '/farmer/add_animal': (context) => const AddAnimalScreen(),
               '/farmer/alerts': (context) => const AlertsScreen(),
               '/farmer/transfers': (context) => const TransferRequestsScreen(),
 
-              // Ag Officer Routes
               '/officer': (context) => const OfficerDashboard(),
               '/officer/farmers': (context) => const FarmersListScreen(),
               '/officer/animals': (context) => const AllAnimalsScreen(),
@@ -80,12 +78,11 @@ class MyApp extends StatelessWidget {
               '/officer/alerts': (context) => const AllAlertsScreen(),
               '/officer/police': (context) => const AddPoliceScreen(),
 
-              // Police Routes
+
               '/police': (context) => const PoliceDashboard(),
               '/police/stolen': (context) => const StolenAnimalsScreen(),
               '/police/alerts': (context) => const AlertsScreen(),
 
-              // Profile
               '/profile': (context) => const ProfileScreen(),
             },
           );

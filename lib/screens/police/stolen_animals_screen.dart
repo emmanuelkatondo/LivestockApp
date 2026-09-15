@@ -6,6 +6,7 @@ import '../../services/language_service.dart';
 import '../../models/animal_model.dart';
 import '../../models/location_model.dart';
 import '../../utils/constants.dart';
+import '../base_screen.dart';
 import '../../screens/farmer/animal_detail_screen.dart';
 
 class StolenAnimalsScreen extends StatefulWidget {
@@ -31,6 +32,8 @@ class _StolenAnimalsScreenState extends State<StolenAnimalsScreen> {
   }
 
   Future<void> _loadData() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -39,6 +42,8 @@ class _StolenAnimalsScreenState extends State<StolenAnimalsScreen> {
     try {
       final response =
           await _apiService.get('${AppConstants.animals}?status=STOLEN');
+
+      if (!mounted) return;
 
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data['results'] ?? [];
@@ -62,10 +67,12 @@ class _StolenAnimalsScreenState extends State<StolenAnimalsScreen> {
         }
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = e.toString();
       });
     } finally {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
@@ -90,18 +97,10 @@ class _StolenAnimalsScreenState extends State<StolenAnimalsScreen> {
   Widget build(BuildContext context) {
     final languageService = Provider.of<LanguageService>(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(languageService.translate('stolen_animals').toUpperCase()),
-        backgroundColor: Colors.red.shade800,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-          ),
-        ],
-      ),
-      body: Column(
+    return BaseScreen(
+      title: languageService.translate('stolen_animals').toUpperCase(),
+      selectedIndex: 0, // Police dashboard index
+      child: Column(
         children: [
           // Search Bar
           Padding(
@@ -352,6 +351,10 @@ class _FullScreenMapState extends State<FullScreenMap> {
         title: Text(
             '${widget.animalName} - ${languageService.translate('last_known_location')}'),
         backgroundColor: Colors.red.shade800,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline),

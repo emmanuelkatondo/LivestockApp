@@ -27,10 +27,11 @@ class _TransferOwnershipScreenState extends State<TransferOwnershipScreen> {
   final TextEditingController _notesController = TextEditingController();
 
   bool _isLoading = false;
+  bool _isSearching = false;
   String? _errorMessage;
   String? _successMessage;
+  Map<String, dynamic>? _foundUser;
 
-  // ========== HELPER METHOD - Get Current User ID ==========
   Future<int?> _getCurrentUserId() async {
     final prefs = await SharedPreferences.getInstance();
     final userString = prefs.getString(AppConstants.userDataKey);
@@ -61,6 +62,8 @@ class _TransferOwnershipScreenState extends State<TransferOwnershipScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _successMessage = null;
+      _foundUser = null;
     });
 
     try {
@@ -95,98 +98,103 @@ class _TransferOwnershipScreenState extends State<TransferOwnershipScreen> {
         print('   Name: ${currentUser?['first_name']}');
       }
 
-      // Find recipient user
+      // ========== TUMIA ENDPOINT YA SEARCH BY PHONE ==========
       print('Searching for recipient with phone: $phoneNumber');
 
-      final usersResponse =
-          await _apiService.get('${AppConstants.users}?phone=$phoneNumber');
+      final searchResponse = await _apiService
+          .get('${AppConstants.searchByPhone}?phone=$phoneNumber');
 
-      print('API Response status: ${usersResponse.statusCode}');
+      print('Search response status: ${searchResponse.statusCode}');
+      print('Search response data: ${searchResponse.data}');
 
-      List<dynamic> users = [];
-      if (usersResponse.data is List) {
-        users = usersResponse.data;
-        print('Data is List, length: ${users.length}');
-      } else if (usersResponse.data is Map &&
-          usersResponse.data.containsKey('results')) {
-        users = usersResponse.data['results'];
-        print('Data has results, length: ${users.length}');
-      }
+      if (searchResponse.statusCode == 200) {
+        final recipientUser = searchResponse.data;
+        final toUserId = recipientUser['id'] as int?;
+        final recipientPhone = recipientUser['phone'] as String?;
+        final recipientName = recipientUser['first_name'] as String?;
 
-      if (users.isEmpty) {
-        print(' No user found with phone: $phoneNumber');
+        print('RECIPIENT FOUND:');
+        print('   ID: $toUserId');
+        print('   Phone: $recipientPhone');
+        print('   Name: $recipientName');
+
+        // Set found user for display
+        setState(() {
+          _foundUser = recipientUser;
+        });
+
+        if (toUserId == null) {
+          print('Recipient ID is null!');
+          setState(() {
+            _errorMessage = context.tr('invalid_recipient_phone');
+          });
+          setState(() => _isLoading = false);
+          return;
+        }
+
+        // ========== SELF-TRANSFER CHECK ==========
+        final currentUserId = currentUser?['id'] as int?;
+        if (toUserId == currentUserId) {
+          print('SELF TRANSFER DETECTED!');
+          setState(() {
+            _errorMessage = context.tr('self_transfer_error');
+          });
+          setState(() => _isLoading = false);
+          return;
+        }
+     
+        print('Self transfer check passed. Proceeding...');
+
+        // Create ransfer request
+        final transferData = {
+          'animal': widget.animal.id,
+          'to_user': toUserId,
+          'notes': _notesController.text.trim(),
+        };
+
+        print('Sending transfer data: $transferData');
+
+        final response =
+            await _apiService.post(AppConstants.transfers, transferData);
+
+        print('Transfer response status: ${response.statusCode}');
+        print('Transfer response data: ${response.data}');
+
+        if (response.statusCode == 201) {
+          print('Transfer initiated successfully!');
+          setState(() {
+            _successMessage = context.tr('request_sent_success');
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.tr('request_sent_success')),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              Navigator.pop(context, true);
+            }
+          });
+        } else {
+          print('Transfer failed with status ${response.statusCode}');
+          setState(() {
+            _errorMessage =
+                response.data['error'] ?? context.tr('transfer_failed');
+          });
+        }
+      } else if (searchResponse.statusCode == 400 ||
+          searchResponse.statusCode == 404) {
+        final errorMsg = searchResponse.data['error'] ?? 'User not found';
+        print('Error: $errorMsg');
+        setState(() {
+          _errorMessage = errorMsg;
+        });
+      } else {
         setState(() {
           _errorMessage = context.tr('recipient_not_found');
-        });
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      final recipientUser = users.first;
-      final toUserId = recipientUser['id'] as int?;
-      final recipientPhone = recipientUser['phone'] as String?;
-      final recipientName = recipientUser['first_name'] as String?;
-
-      final currentUserId = currentUser?['id'] as int?;
-
-      print('RECIPIENT FOUND:');
-      print('   ID: $toUserId');
-      print('   Phone: $recipientPhone');
-      print('   Name: $recipientName');
-      print('Current user ID: $currentUserId');
-
-      // Check if trying to transfer to self
-      if (toUserId != null &&
-          currentUserId != null &&
-          toUserId == currentUserId) {
-        print('SELF TRANSFER DETECTED!');
-        setState(() {
-          _errorMessage = context.tr('self_transfer_error');
-        });
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      if (toUserId == null) {
-        print('Recipient ID is null!');
-        setState(() {
-          _errorMessage = context.tr('invalid_recipient_phone');
-        });
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      print('Self transfer check passed. Proceeding...');
-
-      // Create transfer request
-      final transferData = {
-        'animal': widget.animal.id,
-        'to_user': toUserId,
-        'notes': _notesController.text.trim(),
-      };
-
-      print('Sending transfer data: $transferData');
-
-      final response =
-          await _apiService.post(AppConstants.transfers, transferData);
-
-      print('Transfer response status: ${response.statusCode}');
-      print('Transfer response data: ${response.data}');
-
-      if (response.statusCode == 201) {
-        print(' Transfer initiated successfully!');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.tr('request_sent_success')),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context, true);
-      } else {
-        print('Transfer failed with status ${response.statusCode}');
-        setState(() {
-          _errorMessage =
-              response.data['error'] ?? context.tr('transfer_failed');
         });
       }
     } catch (e) {
@@ -211,14 +219,18 @@ class _TransferOwnershipScreenState extends State<TransferOwnershipScreen> {
         title: Text(
             '${languageService.translate('transfer_ownership')} - ${widget.animal.name}'),
         backgroundColor: const Color(0xFF2E7D32),
+        foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Animal Info Card
             Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -249,14 +261,24 @@ class _TransferOwnershipScreenState extends State<TransferOwnershipScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          Text(widget.animal.animalId),
+                          Text(
+                            widget.animal.animalId,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
                           Chip(
-                            label: Text(languageService
-                                .translate(widget.animal.status.toLowerCase())),
+                            label: Text(
+                              languageService.translate(
+                                  widget.animal.status.toLowerCase()),
+                            ),
                             backgroundColor:
                                 widget.animal.statusColor.withOpacity(0.1),
                             labelStyle:
                                 TextStyle(color: widget.animal.statusColor),
+                            padding: EdgeInsets.zero,
                           ),
                         ],
                       ),
@@ -270,6 +292,10 @@ class _TransferOwnershipScreenState extends State<TransferOwnershipScreen> {
 
             // Transfer Form
             Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -290,14 +316,67 @@ class _TransferOwnershipScreenState extends State<TransferOwnershipScreen> {
                     TextField(
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
+                      enabled: !_isLoading,
                       decoration: InputDecoration(
                         labelText:
                             languageService.translate('recipient_phone_number'),
                         hintText: languageService.translate('phone_hint'),
                         prefixIcon: const Icon(Icons.person_add),
                         border: const OutlineInputBorder(),
+                        suffixIcon: _foundUser != null
+                            ? const Icon(Icons.check_circle,
+                                color: Colors.green)
+                            : null,
                       ),
+                      onChanged: (value) {
+               
+                        if (_foundUser != null) {
+                          setState(() {
+                            _foundUser = null;
+                            _errorMessage = null;
+                          });
+                        }
+                      },
                     ),
+
+                    // Show found user info
+                    if (_foundUser != null)
+                      Container(
+                        margin: const EdgeInsets.only(top: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.green.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.person, color: Colors.green),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _foundUser!['first_name'] ?? 'Unknown',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    _foundUser!['phone'] ?? '',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.check_circle, color: Colors.green),
+                          ],
+                        ),
+                      ),
 
                     const SizedBox(height: 16),
 
@@ -305,6 +384,7 @@ class _TransferOwnershipScreenState extends State<TransferOwnershipScreen> {
                     TextField(
                       controller: _notesController,
                       maxLines: 3,
+                      enabled: !_isLoading,
                       decoration: InputDecoration(
                         labelText: languageService.translate('notes_optional'),
                         prefixIcon: const Icon(Icons.note),
@@ -357,6 +437,18 @@ class _TransferOwnershipScreenState extends State<TransferOwnershipScreen> {
                                   style: const TextStyle(color: Colors.red),
                                 ),
                               ),
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _errorMessage = null;
+                                  });
+                                },
+                                child: Icon(
+                                  Icons.close,
+                                  size: 18,
+                                  color: Colors.red.shade400,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -383,6 +475,18 @@ class _TransferOwnershipScreenState extends State<TransferOwnershipScreen> {
                                   style: const TextStyle(color: Colors.green),
                                 ),
                               ),
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _successMessage = null;
+                                  });
+                                },
+                                child: Icon(
+                                  Icons.close,
+                                  size: 18,
+                                  color: Colors.green.shade400,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -398,12 +502,27 @@ class _TransferOwnershipScreenState extends State<TransferOwnershipScreen> {
                         onPressed: _isLoading ? null : _initiateTransfer,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         child: _isLoading
-                            ? const CircularProgressIndicator()
-                            : Text(languageService
-                                .translate('start_transfer')
-                                .toUpperCase()),
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                languageService
+                                    .translate('start_transfer')
+                                    .toUpperCase(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
                   ],

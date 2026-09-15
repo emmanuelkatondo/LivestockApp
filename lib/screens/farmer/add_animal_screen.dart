@@ -11,6 +11,8 @@ import '../base_screen.dart';
 class AddAnimalScreen extends StatefulWidget {
   const AddAnimalScreen({super.key});
 
+
+
   @override
   State<AddAnimalScreen> createState() => _AddAnimalScreenState();
 }
@@ -25,6 +27,7 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
   File? _selectedImage;
   bool _isLoading = false;
   String? _errorMessage;
+  int? _ownerId;
 
   final List<Map<String, String>> _animalTypes = [
     {'value': 'CATTLE', 'labelKey': 'cattle'},
@@ -32,6 +35,24 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
     {'value': 'SHEEP', 'labelKey': 'sheep'},
     {'value': 'OTHER', 'labelKey': 'other'},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOwnerProfile();
+  }
+
+  Future<void> _loadOwnerProfile() async {
+    try {
+      final response = await _apiService.get(AppConstants.ownerMe);
+      if (response.statusCode == 200) {
+        _ownerId = response.data['id'];
+        print('Owner ID loaded: $_ownerId');
+      }
+    } catch (e) {
+      print('Failed to load owner profile: $e');
+    }
+  }
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -55,6 +76,19 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
       return;
     }
 
+    if (_ownerId == null) {
+      setState(() {
+        _errorMessage = 'Please wait, loading your profile...';
+      });
+      await _loadOwnerProfile();
+      if (_ownerId == null) {
+        setState(() {
+          _errorMessage = 'Failed to load your profile. Please try again.';
+        });
+        return;
+      }
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -66,9 +100,9 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
         'type': _selectedType,
         'color': _colorController.text.trim(),
         'notes': _notesController.text.trim(),
+        'owner': _ownerId!.toString(), 
       });
 
-      // Add image if selected
       if (_selectedImage != null) {
         final fileName = _selectedImage!.path.split('/').last;
         final fileSize = await _selectedImage!.length();
@@ -117,6 +151,8 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
                 '${context.tr('image_error')}: ${errorData['photo']}';
           } else if (errorData.containsKey('name')) {
             _errorMessage = '${context.tr('name_error')}: ${errorData['name']}';
+          } else if (errorData.containsKey('owner')) {
+            _errorMessage = 'Owner field is required. Please try again.';
           } else {
             _errorMessage = context.tr('animal_add_failed');
           }
@@ -145,13 +181,13 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
 
     return BaseScreen(
       title: 'Add Animal',
-      selectedIndex: 2, // Index for Add Animal in menu (Farmer)
+      selectedIndex: 2,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Photo picker
+      
             Center(
               child: GestureDetector(
                 onTap: _pickImage,
@@ -204,7 +240,6 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Animal Type Dropdown
             DropdownButtonFormField<String>(
               value: _selectedType,
               decoration: InputDecoration(
@@ -236,7 +271,6 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
 
             const SizedBox(height: 16),
 
-            // Color
             TextField(
               controller: _colorController,
               decoration: InputDecoration(
@@ -249,7 +283,6 @@ class _AddAnimalScreenState extends State<AddAnimalScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Notes
             TextField(
               controller: _notesController,
               maxLines: 3,

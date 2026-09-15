@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   static ThemeData lightTheme = ThemeData(
-    // Colors
+ 
     primaryColor: const Color(0xFF2E7D32),
     scaffoldBackgroundColor: Colors.white,
     colorScheme: ColorScheme.fromSeed(
@@ -10,7 +10,7 @@ class AppTheme {
       primary: const Color(0xFF2E7D32),
     ),
 
-    // AppBar
+
     appBarTheme: const AppBarTheme(
       backgroundColor: Color(0xFF2E7D32),
       elevation: 0,
@@ -23,7 +23,7 @@ class AppTheme {
       iconTheme: IconThemeData(color: Colors.white),
     ),
 
-    // Input Fields
+   
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: Colors.grey.shade50,
@@ -46,7 +46,7 @@ class AppTheme {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     ),
 
-    // Buttons
+
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFF2E7D32),

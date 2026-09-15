@@ -13,8 +13,11 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  // Controllers
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _middleNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -26,45 +29,167 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
+  String? _successMessage;
 
-  // Background image moja tu
+  // Background image
   final String _backgroundImage = 'assets/images/live.jpg';
 
-  // Function to clean phone number
+  // ==================== VALIDATION FUNCTIONS ====================
+
+  /// Validate name (3-10 characters, letters only)
+  String? _validateName(String? value, String fieldName) {
+    if (value == null || value.trim().isEmpty) {
+      return '$fieldName is required';
+    }
+    final trimmed = value.trim();
+    if (trimmed.length < 3) {
+      return '$fieldName must be at least 3 characters';
+    }
+    if (trimmed.length > 10) {
+      return '$fieldName must be less than 10 characters';
+    }
+    if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(trimmed)) {
+      return '$fieldName can only contain letters';
+    }
+    return null;
+  }
+
+  /// Validate Tanzania phone number (10 digits starting with 0)
+  String? _validatePhone(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Phone number is required';
+    }
+
+    // Remove all non-digit characters
+    String cleaned = value.replaceAll(RegExp(r'[^0-9]'), '');
+
+    // Must start with 0 and have exactly 10 digits
+    if (!cleaned.startsWith('0')) {
+      return 'Phone number must start with 0 (e.g., 0712345678)';
+    }
+
+    if (cleaned.length != 10) {
+      return 'Phone number must be exactly 10 digits (e.g., 0712345678)';
+    }
+
+    // Get the 9 digits after the leading 0 to check network prefix
+    final numberPart = cleaned.substring(1);
+
+    // Valid Tanzania network prefixes (after removing leading 0)
+    // Vodacom: 71, 74, 75, 76
+    // Airtel: 78, 79
+    // Tigo (yas): 65, 66, 67, 68, 69, 70
+    // Halotel: 61, 62
+    final validPrefixes = [
+      '71', '74', '75', '76', // Vodacom
+      '78', '79', // Airtel
+      '65', '66', '67', '68', '69', '70', // Tigo (yas)
+      '61', '62', // Halotel
+    ];
+
+    final prefix = numberPart.substring(0, 2);
+    if (!validPrefixes.contains(prefix)) {
+      return 'Invalid network. Use Vodacom, Airtel, Tigo (yas), or Halotel';
+    }
+
+    return null;
+  }
+
+  /// Validate email (optional but if provided must be valid)
+  String? _validateEmail(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null; // Optional field
+    }
+    final email = value.trim();
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      return 'Please enter a valid email address';
+    }
+    return null;
+  }
+
+  /// Validate location (optional)
+  String? _validateLocation(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null; // Optional field
+    }
+    if (value.trim().length < 3) {
+      return 'Location must be at least 3 characters';
+    }
+    return null;
+  }
+
+  /// Validate password (min 8 characters)
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Password is required';
+    }
+    if (value.length < 8) {
+      return 'Password must be at least 8 characters';
+    }
+    return null;
+  }
+
+  /// Validate confirm password
+  String? _validateConfirmPassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please confirm your password';
+    }
+    if (value != _passwordController.text) {
+      return 'Passwords do not match';
+    }
+    return null;
+  }
+
+  // ==================== PHONE CLEANING ====================
+
   String _cleanPhoneNumber(String phone) {
+    // Remove all non-digit characters
     String cleaned = phone.replaceAll(RegExp(r'[^0-9]'), '');
-    if (cleaned.startsWith('0')) {
+
+    // If it starts with 0, convert to 255 format
+    if (cleaned.startsWith('0') && cleaned.length == 10) {
       cleaned = '255${cleaned.substring(1)}';
-    } else if (cleaned.startsWith('7') || cleaned.startsWith('6')) {
-      cleaned = '255$cleaned';
     }
-    if (cleaned.length > 12) {
-      cleaned = cleaned.substring(0, 12);
-    }
+
     return cleaned;
   }
 
+  // ==================== REGISTER HANDLER ====================
+
   Future<void> _handleRegister() async {
-    if (_phoneController.text.isEmpty ||
-        _fullNameController.text.isEmpty ||
-        _passwordController.text.isEmpty ||
-        _confirmPasswordController.text.isEmpty) {
-      setState(() {
-        _errorMessage = context.tr('all_required_fields');
-      });
-      return;
-    }
+    // Validate all fields
+    final firstNameError =
+        _validateName(_firstNameController.text, 'First name');
+    final lastNameError = _validateName(_lastNameController.text, 'Last name');
+    final middleNameError = _middleNameController.text.isNotEmpty
+        ? _validateName(_middleNameController.text, 'Middle name')
+        : null;
+    final phoneError = _validatePhone(_phoneController.text);
+    final emailError = _validateEmail(_emailController.text);
+    final locationError = _validateLocation(_locationController.text);
+    final passwordError = _validatePassword(_passwordController.text);
+    final confirmPasswordError =
+        _validateConfirmPassword(_confirmPasswordController.text);
 
-    if (_passwordController.text != _confirmPasswordController.text) {
+    // Check for errors
+    if (firstNameError != null ||
+        lastNameError != null ||
+        middleNameError != null ||
+        phoneError != null ||
+        emailError != null ||
+        locationError != null ||
+        passwordError != null ||
+        confirmPasswordError != null) {
       setState(() {
-        _errorMessage = context.tr('passwords_do_not_match');
-      });
-      return;
-    }
-
-    if (_passwordController.text.length < 6) {
-      setState(() {
-        _errorMessage = context.tr('password_min_length');
+        _errorMessage = firstNameError ??
+            lastNameError ??
+            middleNameError ??
+            phoneError ??
+            emailError ??
+            locationError ??
+            passwordError ??
+            confirmPasswordError ??
+            'Please fill all required fields';
       });
       return;
     }
@@ -72,41 +197,123 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _successMessage = null;
     });
 
     final cleanPhone = _cleanPhoneNumber(_phoneController.text);
+    final middleName = _middleNameController.text.trim().isNotEmpty
+        ? _middleNameController.text.trim()
+        : null;
 
-    final success = await _authService.register(
-      phoneNumber: cleanPhone,
-      fullName: _fullNameController.text,
-      password: _passwordController.text,
-      confirmPassword: _confirmPasswordController.text,
-      email: _emailController.text.isNotEmpty ? _emailController.text : null,
-      location:
-          _locationController.text.isNotEmpty ? _locationController.text : null,
-    );
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.tr('registration_success')),
-          backgroundColor: Colors.green,
-        ),
+    try {
+      final success = await _authService.register(
+        phoneNumber: cleanPhone,
+        firstName: _firstNameController.text.trim(),
+        middleName: middleName,
+        lastName: _lastNameController.text.trim(),
+        password: _passwordController.text,
+        confirmPassword: _confirmPasswordController.text,
+        email: _emailController.text.isNotEmpty ? _emailController.text : null,
+        location: _locationController.text.isNotEmpty
+            ? _locationController.text
+            : null,
       );
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
-    } else {
+
       setState(() {
-        _errorMessage = context.tr('registration_failed_try_again');
+        _isLoading = false;
       });
+
+      if (success && mounted) {
+        setState(() {
+          _successMessage = context.tr('registration_success');
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.tr('registration_success')),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+            );
+          }
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Handle server errors
+      final errorMsg = e.toString();
+
+      if (errorMsg.contains('phone') && errorMsg.contains('already exists')) {
+        setState(() {
+          _errorMessage =
+              '❌ This phone number is already registered. Please use a different number or login.';
+        });
+      } else if (errorMsg.contains('email') &&
+          errorMsg.contains('already exists')) {
+        setState(() {
+          _errorMessage =
+              '❌ This email is already registered. Please use a different email or login.';
+        });
+      } else if (errorMsg.contains('password')) {
+        setState(() {
+          _errorMessage = '❌ Password error: ${_extractErrorMessage(errorMsg)}';
+        });
+      } else if (errorMsg.contains('phone')) {
+        setState(() {
+          _errorMessage =
+              '❌ Phone number error: ${_extractErrorMessage(errorMsg)}';
+        });
+      } else if (errorMsg.contains('first_name') ||
+          errorMsg.contains('last_name')) {
+        setState(() {
+          _errorMessage = '❌ Name error: ${_extractErrorMessage(errorMsg)}';
+        });
+      } else if (errorMsg.contains('Connection') ||
+          errorMsg.contains('timeout')) {
+        setState(() {
+          _errorMessage =
+              '🌐 Network error. Please check your internet connection.';
+        });
+      } else {
+        setState(() {
+          _errorMessage =
+              '❌ Registration failed: ${_extractErrorMessage(errorMsg)}';
+        });
+      }
     }
   }
+
+  String _extractErrorMessage(String error) {
+    // Try to extract meaningful message from server response
+    if (error.contains('[')) {
+      final start = error.indexOf('[');
+      final end = error.indexOf(']');
+      if (start != -1 && end != -1 && end > start) {
+        return error.substring(start + 1, end);
+      }
+    }
+    if (error.contains('{')) {
+      try {
+        final regex = RegExp(r'"error":\s*"([^"]+)"');
+        final match = regex.firstMatch(error);
+        if (match != null) {
+          return match.group(1) ?? error;
+        }
+      } catch (_) {}
+    }
+    return error;
+  }
+
+  // ==================== BUILD UI ====================
 
   @override
   Widget build(BuildContext context) {
@@ -232,293 +439,183 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                                 const SizedBox(height: 20),
 
-                                TextField(
-                                  controller: _fullNameController,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 14),
-                                  decoration: InputDecoration(
-                                    prefixIcon: const Icon(Icons.person,
-                                        color: Colors.white70, size: 20),
-                                    hintText:
-                                        languageService.translate('full_name'),
-                                    hintStyle: const TextStyle(
-                                        color: Colors.white54, fontSize: 13),
-                                    labelText:
-                                        languageService.translate('full_name'),
-                                    labelStyle: const TextStyle(
-                                        color: Colors.white70, fontSize: 13),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                          color: Colors.white.withOpacity(0.3)),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                          color: Colors.white, width: 2),
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.white.withOpacity(0.08),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 14,
-                                    ),
-                                  ),
+                                // FIRST NAME
+                                _buildTextField(
+                                  controller: _firstNameController,
+                                  icon: Icons.person,
+                                  hint: 'First Name * (3-10 letters)',
+                                  label: 'First Name',
+                                  isRequired: true,
+                                  obscureText: false,
                                 ),
                                 const SizedBox(height: 12),
-                                TextField(
+
+                                // MIDDLE NAME (Optional)
+                                _buildTextField(
+                                  controller: _middleNameController,
+                                  icon: Icons.person_outline,
+                                  hint: 'Middle Name (Optional)',
+                                  label: 'Middle Name',
+                                  isRequired: false,
+                                  obscureText: false,
+                                ),
+                                const SizedBox(height: 12),
+
+                                // LAST NAME
+                                _buildTextField(
+                                  controller: _lastNameController,
+                                  icon: Icons.person_add,
+                                  hint: 'Last Name * (3-10 letters)',
+                                  label: 'Last Name',
+                                  isRequired: true,
+                                  obscureText: false,
+                                ),
+                                const SizedBox(height: 12),
+
+                                // PHONE
+                                _buildTextField(
                                   controller: _phoneController,
+                                  icon: Icons.phone,
+                                  hint: 'Phone Number * (e.g., 0712345678)',
+                                  label: 'Phone Number',
+                                  isRequired: true,
+                                  obscureText: false,
                                   keyboardType: TextInputType.phone,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 14),
-                                  decoration: InputDecoration(
-                                    prefixIcon: const Icon(Icons.phone,
-                                        color: Colors.white70, size: 20),
-                                    hintText: languageService
-                                        .translate('phone_number'),
-                                    hintStyle: const TextStyle(
-                                        color: Colors.white54, fontSize: 13),
-                                    labelText: languageService
-                                        .translate('phone_number'),
-                                    labelStyle: const TextStyle(
-                                        color: Colors.white70, fontSize: 13),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                          color: Colors.white.withOpacity(0.3)),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                          color: Colors.white, width: 2),
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.white.withOpacity(0.08),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 14,
-                                    ),
-                                  ),
                                 ),
                                 const SizedBox(height: 12),
 
-                                TextField(
+                                // EMAIL (Optional)
+                                _buildTextField(
                                   controller: _emailController,
+                                  icon: Icons.email,
+                                  hint: 'Email (Optional)',
+                                  label: 'Email',
+                                  isRequired: false,
+                                  obscureText: false,
                                   keyboardType: TextInputType.emailAddress,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 14),
-                                  decoration: InputDecoration(
-                                    prefixIcon: const Icon(Icons.email,
-                                        color: Colors.white70, size: 20),
-                                    hintText:
-                                        '${languageService.translate('email')} (${languageService.translate('optional')})',
-                                    hintStyle: const TextStyle(
-                                        color: Colors.white54, fontSize: 13),
-                                    labelText:
-                                        languageService.translate('email'),
-                                    labelStyle: const TextStyle(
-                                        color: Colors.white70, fontSize: 13),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                          color: Colors.white.withOpacity(0.3)),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                          color: Colors.white, width: 2),
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.white.withOpacity(0.08),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 14,
-                                    ),
-                                  ),
                                 ),
                                 const SizedBox(height: 12),
 
-                                TextField(
+                                // LOCATION (Optional)
+                                _buildTextField(
                                   controller: _locationController,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 14),
-                                  decoration: InputDecoration(
-                                    prefixIcon: const Icon(Icons.location_on,
-                                        color: Colors.white70, size: 20),
-                                    hintText:
-                                        '${languageService.translate('location')} (${languageService.translate('optional')})',
-                                    hintStyle: const TextStyle(
-                                        color: Colors.white54, fontSize: 13),
-                                    labelText:
-                                        languageService.translate('address'),
-                                    labelStyle: const TextStyle(
-                                        color: Colors.white70, fontSize: 13),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                          color: Colors.white.withOpacity(0.3)),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                          color: Colors.white, width: 2),
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.white.withOpacity(0.08),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 14,
-                                    ),
-                                  ),
+                                  icon: Icons.location_on,
+                                  hint: 'Location (Optional)',
+                                  label: 'Address',
+                                  isRequired: false,
+                                  obscureText: false,
                                 ),
                                 const SizedBox(height: 12),
 
-                                TextField(
+                                // PASSWORD
+                                _buildTextField(
                                   controller: _passwordController,
+                                  icon: Icons.lock,
+                                  hint: 'Password * (min 8 chars)',
+                                  label: 'Password',
+                                  isRequired: true,
                                   obscureText: _obscurePassword,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 14),
-                                  decoration: InputDecoration(
-                                    prefixIcon: const Icon(Icons.lock,
-                                        color: Colors.white70, size: 20),
-                                    hintText:
-                                        languageService.translate('password'),
-                                    hintStyle: const TextStyle(
-                                        color: Colors.white54, fontSize: 13),
-                                    labelText:
-                                        languageService.translate('password'),
-                                    labelStyle: const TextStyle(
-                                        color: Colors.white70, fontSize: 13),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _obscurePassword
-                                            ? Icons.visibility_off
-                                            : Icons.visibility,
-                                        color: Colors.white70,
-                                        size: 20,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _obscurePassword = !_obscurePassword;
-                                        });
-                                      },
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                          color: Colors.white.withOpacity(0.3)),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                          color: Colors.white, width: 2),
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.white.withOpacity(0.08),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 14,
-                                    ),
-                                  ),
+                                  isPassword: true,
+                                  onSuffixTap: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
                                 ),
                                 const SizedBox(height: 12),
 
-                                TextField(
+                                // CONFIRM PASSWORD
+                                _buildTextField(
                                   controller: _confirmPasswordController,
+                                  icon: Icons.lock_outline,
+                                  hint: 'Confirm Password *',
+                                  label: 'Confirm Password',
+                                  isRequired: true,
                                   obscureText: _obscureConfirmPassword,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 14),
-                                  decoration: InputDecoration(
-                                    prefixIcon: const Icon(Icons.lock_outline,
-                                        color: Colors.white70, size: 20),
-                                    hintText: languageService
-                                        .translate('confirm_password'),
-                                    hintStyle: const TextStyle(
-                                        color: Colors.white54, fontSize: 13),
-                                    labelText: languageService
-                                        .translate('confirm_password'),
-                                    labelStyle: const TextStyle(
-                                        color: Colors.white70, fontSize: 13),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _obscureConfirmPassword
-                                            ? Icons.visibility_off
-                                            : Icons.visibility,
-                                        color: Colors.white70,
-                                        size: 20,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _obscureConfirmPassword =
-                                              !_obscureConfirmPassword;
-                                        });
-                                      },
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                          color: Colors.white.withOpacity(0.3)),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                          color: Colors.white, width: 2),
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.white.withOpacity(0.08),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 14,
-                                    ),
-                                  ),
+                                  isPassword: true,
+                                  onSuffixTap: () {
+                                    setState(() {
+                                      _obscureConfirmPassword =
+                                          !_obscureConfirmPassword;
+                                    });
+                                  },
                                 ),
 
+                                // Error Message
                                 if (_errorMessage != null)
                                   Padding(
                                     padding: const EdgeInsets.only(top: 12),
                                     child: Container(
-                                      padding: const EdgeInsets.all(10),
+                                      padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
                                         color: Colors.red.withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(10),
                                         border: Border.all(
-                                            color: Colors.red.withOpacity(0.5)),
+                                          color: Colors.red.withOpacity(0.5),
+                                        ),
                                       ),
                                       child: Row(
                                         children: [
-                                          const Icon(Icons.error,
-                                              color: Colors.red, size: 16),
-                                          const SizedBox(width: 8),
+                                          const Icon(
+                                            Icons.error_outline,
+                                            color: Colors.red,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 12),
                                           Expanded(
                                             child: Text(
                                               _errorMessage!,
                                               style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 12),
+                                                color: Colors.white,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ),
+                                          GestureDetector(
+                                            onTap: () {
+                                              setState(() {
+                                                _errorMessage = null;
+                                              });
+                                            },
+                                            child: Icon(
+                                              Icons.close,
+                                              size: 18,
+                                              color: Colors.red.shade400,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+
+                                // Success Message
+                                if (_successMessage != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 12),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: Colors.green.withOpacity(0.5),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.check_circle,
+                                            color: Colors.green,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              _successMessage!,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 13,
+                                              ),
                                             ),
                                           ),
                                         ],
@@ -528,6 +625,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                                 const SizedBox(height: 20),
 
+                                // Register Button
                                 SizedBox(
                                   width: double.infinity,
                                   height: 46,
@@ -564,6 +662,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 12),
+
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
@@ -580,14 +679,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         Navigator.pushReplacement(
                                           context,
                                           MaterialPageRoute(
-                                              builder: (_) =>
-                                                  const LoginScreen()),
+                                            builder: (_) => const LoginScreen(),
+                                          ),
                                         );
                                       },
                                       style: TextButton.styleFrom(
                                         minimumSize: Size.zero,
                                         padding: const EdgeInsets.symmetric(
-                                            horizontal: 6, vertical: 2),
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
                                       ),
                                       child: Text(
                                         languageService
@@ -614,7 +715,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
 
-              // ========== LANGUAGE SELECTOR - MWISHO KABISA (JUU YA YOTE) ==========
               Positioned(
                 top: topPadding + 10,
                 right: 16,
@@ -623,7 +723,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   borderRadius: BorderRadius.circular(30),
                   child: LanguageSelector(
                     onLanguageChanged: (languageCode) async {
-                      print('🔵 Language selector clicked: $languageCode');
+                      print(' Language selector clicked: $languageCode');
                       await languageService.setLanguage(languageCode);
                     },
                   ),
@@ -633,6 +733,78 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required IconData icon,
+    required String hint,
+    required String label,
+    required bool isRequired,
+    required bool obscureText,
+    TextInputType keyboardType = TextInputType.text,
+    bool isPassword = false,
+    VoidCallback? onSuffixTap,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 14,
+      ),
+      decoration: InputDecoration(
+        prefixIcon: Icon(
+          icon,
+          color: Colors.white70,
+          size: 20,
+        ),
+        hintText: hint,
+        hintStyle: const TextStyle(
+          color: Colors.white54,
+          fontSize: 13,
+        ),
+        labelText: label,
+        labelStyle: const TextStyle(
+          color: Colors.white70,
+          fontSize: 13,
+        ),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  obscureText ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.white70,
+                  size: 20,
+                ),
+                onPressed: onSuffixTap,
+              )
+            : null,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Colors.white.withOpacity(0.3),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: Colors.white,
+            width: 2,
+          ),
+        ),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.08),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
+      ),
     );
   }
 }

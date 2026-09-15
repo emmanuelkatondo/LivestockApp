@@ -35,15 +35,15 @@ class _AlertsScreenState extends State<AlertsScreen> {
     try {
       final response = await _apiService.get(AppConstants.alerts);
 
-      print('📥 Alerts response status: ${response.statusCode}');
+      print('Alerts response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data['results'] ?? [];
         _alerts = data.map((json) => AlertModel.fromJson(json)).toList();
-        print('✅ Loaded ${_alerts.length} alerts');
+        print(' Loaded ${_alerts.length} alerts');
       }
     } catch (e) {
-      print('❌ Error loading alerts: $e');
+      print('Error loading alerts: $e');
       setState(() {
         _errorMessage = e.toString();
       });
@@ -74,7 +74,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
     return BaseScreen(
       title: 'Alerts',
-      selectedIndex: 4, // Index for Alerts in menu (Farmer)
+      selectedIndex: 4, 
       child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null

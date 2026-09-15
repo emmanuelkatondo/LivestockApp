@@ -27,8 +27,7 @@ class ApiService {
         final token = prefs.getString(AppConstants.tokenKey);
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
-          print(
-              ' Token added: ${token.substring(0, min(20, token.length))}');
+          print(' Token added: ${token.substring(0, min(20, token.length))}');
         } else {
           print(' No token found');
         }
@@ -133,7 +132,6 @@ class ApiService {
     }
   }
 
-  
   Future<Response> delete(String endpoint) async {
     await _ensureInitialized();
     try {
@@ -143,29 +141,65 @@ class ApiService {
     }
   }
 
-  String _handleError(DioException error) {
+  Exception _handleError(DioException error) {
+    print('Dio Error: ${error.message}');
+    print(' Response data: ${error.response?.data}');
+    print(' Response status: ${error.response?.statusCode}');
+
+
+    String errorMessage = 'Unknown error occurred';
+
     if (error.response != null) {
       final data = error.response!.data;
-      if (data is Map && data.containsKey('error')) {
-        return data['error'];
-      }
-      if (data is Map && data.containsKey('detail')) {
-        return data['detail'];
-      }
-      if (data is Map && data.containsKey('message')) {
-        return data['message'];
-      }
-      return 'Server error: ${error.response?.statusCode}';
-    } else if (error.type == DioExceptionType.connectionTimeout) {
-      return 'Connection timeout. Please check your internet.';
-    } else if (error.type == DioExceptionType.receiveTimeout) {
-      return 'Receive timeout. Server is taking too long.';
-    } else if (error.type == DioExceptionType.connectionError) {
-      return 'No internet connection. Please check your network.';
-    } else if (error.type == DioExceptionType.cancel) {
-      return 'Request was cancelled.';
-    }
-    return 'Unknown error occurred: ${error.message}';
-  }
-}
 
+      if (data is Map) {
+
+        if (data.containsKey('error')) {
+          errorMessage = data['error'].toString();
+        } else if (data.containsKey('message')) {
+          errorMessage = data['message'].toString();
+        } else if (data.containsKey('detail')) {
+          errorMessage = data['detail'].toString();
+        } else if (data.containsKey('non_field_errors')) {
+          final errors = data['non_field_errors'];
+          if (errors is List) {
+            errorMessage = errors.join(', ');
+          } else {
+            errorMessage = errors.toString();
+          }
+        } else {
+
+          List<String> errors = [];
+          data.forEach((key, value) {
+            if (value is List) {
+              errors.add('$key: ${value.join(', ')}');
+            } else if (value is String) {
+              errors.add('$key: $value');
+            } else {
+              errors.add('$key: $value');
+            }
+          });
+          if (errors.isNotEmpty) {
+            errorMessage = errors.join('\n');
+          }
+        }
+      } else if (data is String) {
+        errorMessage = data;
+      } else {
+        errorMessage = 'Server error: ${error.response?.statusCode}';
+      }
+    } else if (error.type == DioExceptionType.connectionTimeout) {
+      errorMessage = 'Connection timeout. Please check your internet.';
+    } else if (error.type == DioExceptionType.receiveTimeout) {
+      errorMessage = 'Receive timeout. Server is taking too long.';
+    } else if (error.type == DioExceptionType.connectionError) {
+      errorMessage = 'No internet connection. Please check your network.';
+    } else if (error.type == DioExceptionType.cancel) {
+      errorMessage = 'Request was cancelled.';
+    }
+
+    print(' Error message: $errorMessage');
+    return Exception(errorMessage);
+  }
+
+}

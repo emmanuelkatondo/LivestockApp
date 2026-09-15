@@ -19,7 +19,6 @@ class _FarmersListScreenState extends State<FarmersListScreen> {
 
   List<UserModel> _farmers = [];
   Map<int, List<AnimalModel>> _farmerAnimals = {};
-  Map<int, int> _animalCounts = {};
   bool _isLoading = true;
   String? _errorMessage;
   String _searchQuery = '';
@@ -37,10 +36,8 @@ class _FarmersListScreenState extends State<FarmersListScreen> {
     });
 
     try {
+      // 1. Load farmers
       final response = await _apiService.get('${AppConstants.users}farmers/');
-
-      print('Response status: ${response.statusCode}');
-      print(' Response data: ${response.data}');
 
       if (response.statusCode == 200) {
         List<dynamic> data;
@@ -53,25 +50,18 @@ class _FarmersListScreenState extends State<FarmersListScreen> {
           data = [];
         }
 
-        print('Extracted ${data.length} farmers from response');
-
         _farmers = data.map((json) => UserModel.fromJson(json)).toList();
-        print(' Successfully parsed ${_farmers.length} farmers');
+        print('✅ Loaded ${_farmers.length} farmers');
 
-        await _loadAnimalCounts();
-
-        print(' Animal Counts after load: $_animalCounts');
-        for (var farmer in _farmers) {
-          print(
-              'Farmer: ${farmer.fullName} (ID: ${farmer.id}) - Animals: ${_animalCounts[farmer.id] ?? 0}');
-        }
+        // 2. Load animals for each farmer
+        await _loadAnimalsForFarmers();
       } else {
         setState(() {
           _errorMessage = 'Server error: ${response.statusCode}';
         });
       }
     } catch (e) {
-      print('Error loading farmers: $e');
+      print('❌ Error loading farmers: $e');
       setState(() {
         _errorMessage = '${context.tr('network_error')}: $e';
       });
@@ -82,137 +72,45 @@ class _FarmersListScreenState extends State<FarmersListScreen> {
     }
   }
 
-  Future<void> _loadAnimalCounts() async {
+  // ========== NJIA MPYA RAHISI ==========
+  Future<void> _loadAnimalsForFarmers() async {
+    _farmerAnimals.clear();
+
     try {
-      final animalsData = await _loadAllAnimalsData();
-      final animals =
-          animalsData.map((json) => AnimalModel.fromJson(json)).toList();
+      // Pata wanyama wote
+      final response = await _apiService.get(AppConstants.animals);
 
-      _animalCounts.clear();
-      _farmerAnimals.clear();
+      if (response.statusCode == 200) {
+        final animalsData = response.data['results'] ?? [];
+        final allAnimals =
+            animalsData.map((json) => AnimalModel.fromJson(json)).toList();
 
-      print('Total animals from API: ${animals.length}');
+        print('📊 Total animals from API: ${allAnimals.length}');
 
-      for (var i = 0; i < animals.length; i++) {
-        final animal = animals[i];
-        final ownerId = _getOwnerId(animalsData[i], animal) ??
-            _findFarmerIdByOwnerName(animal);
+        // Kila mnyama, tafuta mkulima wake
+        for (final animal in allAnimals) {
+          final ownerId = animal.owner;
 
-        print(
-            'Animal: ${animal.name}, Owner ID: $ownerId, Owner Name: ${animal.ownerfullName}');
+          if (ownerId > 0) {
+            // Tafuta farmer anayeendana na owner huyu
+            final farmer = await _findFarmerByOwnerId(ownerId);
 
-        if (ownerId == null || ownerId == 0) {
-          print('Skipped animal ${animal.name}: owner id not found');
-          continue;
+            if (farmer != null) {
+              _farmerAnimals.putIfAbsent(farmer.id, () => []);
+              _farmerAnimals[farmer.id]!.add(animal);
+            }
+          }
         }
 
-        _animalCounts[ownerId] = (_animalCounts[ownerId] ?? 0) + 1;
-        _farmerAnimals.putIfAbsent(ownerId, () => []).add(animal);
+        print('✅ Loaded animals for ${_farmerAnimals.length} farmers');
       }
-
-      print(
-          'Loaded ${animals.length} animals for ${_animalCounts.length} farmers');
-      print('Animal Counts Map: $_animalCounts');
     } catch (e) {
-      print('Error loading animal counts: $e');
+      print('❌ Error loading animals: $e');
     }
   }
 
-  Future<List<Map<String, dynamic>>> _loadAllAnimalsData() async {
-    final allAnimals = <Map<String, dynamic>>[];
-    String? endpoint = AppConstants.animals;
 
-    while (endpoint != null) {
-      final response = await _apiService.get(endpoint);
-      if (response.statusCode != 200) break;
-
-      allAnimals.addAll(_extractAnimalData(response.data));
-      endpoint = _extractNextPage(response.data);
-    }
-
-    return allAnimals;
-  }
-
-  List<Map<String, dynamic>> _extractAnimalData(dynamic responseData) {
-    final dynamic data;
-
-    if (responseData is List) {
-      data = responseData;
-    } else if (responseData is Map && responseData.containsKey('results')) {
-      data = responseData['results'];
-    } else {
-      data = [];
-    }
-
-    return (data as List)
-        .whereType<Map>()
-        .map((item) => Map<String, dynamic>.from(item))
-        .toList();
-  }
-
-  String? _extractNextPage(dynamic responseData) {
-    if (responseData is Map && responseData['next'] != null) {
-      return responseData['next'].toString();
-    }
-    return null;
-  }
-
-  int? _getOwnerId(Map<String, dynamic> json, AnimalModel animal) {
-    return _readId(
-          json,
-          [
-            'owner',
-            'owner_id',
-            'owner_details',
-            'owner_detail',
-            'farmer',
-            'farmer_id',
-            'farmer_details',
-            'farmer_detail',
-            'user',
-            'user_id',
-            'created_by',
-          ],
-        ) ??
-        (animal.owner == 0 ? null : animal.owner);
-  }
-
-  int? _findFarmerIdByOwnerName(AnimalModel animal) {
-    final ownerName = _normalizeName(animal.ownerfullName);
-    if (ownerName.isEmpty) return null;
-
-    for (final farmer in _farmers) {
-      if (_normalizeName(farmer.fullName) == ownerName) {
-        return farmer.id;
-      }
-    }
-
-    return null;
-  }
-
-  int? _readId(Map<String, dynamic> json, List<String> keys) {
-    for (final key in keys) {
-      final id = _parseIdValue(json[key]);
-      if (id != null) return id;
-    }
-    return null;
-  }
-
-  int? _parseIdValue(dynamic value) {
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value);
-    if (value is Map) {
-      for (final key in ['id', 'pk', 'user_id', 'owner_id', 'farmer_id']) {
-        final id = _parseIdValue(value[key]);
-        if (id != null) return id;
-      }
-    }
-    return null;
-  }
-
-  String _normalizeName(String value) {
-    return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-  }
+// farmers_list_screen.dart
 
   List<UserModel> get _filteredFarmers {
     if (_searchQuery.isEmpty) return _farmers;
@@ -229,6 +127,72 @@ class _FarmersListScreenState extends State<FarmersListScreen> {
         .toList();
   }
 
+  Future<UserModel?> _findFarmerByOwnerId(int ownerId) async {
+    try {
+      final response = await _apiService.get('${AppConstants.owners}$ownerId/');
+
+      if (response.statusCode == 200) {
+        final ownerData = response.data;
+        print(' Owner data: $ownerData');
+
+        int? userId;
+        final userField = ownerData['user'];
+        if (userField is Map && userField.containsKey('id')) {
+          userId = userField['id'] as int?;
+        } else if (userField is int) {
+          userId = userField;
+        } else if (userField is String) {
+          userId = int.tryParse(userField);
+        }
+
+        // Kama bado ni null, jaribu 'primary_owner'
+        if (userId == null || userId == 0) {
+          final primaryOwner = ownerData['primary_owner'];
+          if (primaryOwner is Map && primaryOwner.containsKey('id')) {
+            userId = primaryOwner['id'] as int?;
+          } else if (primaryOwner is int) {
+            userId = primaryOwner;
+          } else if (primaryOwner is String) {
+            userId = int.tryParse(primaryOwner);
+          }
+        }
+
+        if (userId == null || userId == 0) {
+          final users = ownerData['users'] as List?;
+          if (users != null && users.isNotEmpty) {
+            final firstUser = users.first;
+            if (firstUser is Map && firstUser.containsKey('id')) {
+              userId = firstUser['id'] as int?;
+            } else if (firstUser is int) {
+              userId = firstUser;
+            } else if (firstUser is String) {
+              userId = int.tryParse(firstUser);
+            }
+          }
+        }
+
+        print('🔍 Found userId: $userId');
+
+        if (userId != null && userId > 0) {
+
+          try {
+            final farmer = _farmers.firstWhere(
+              (f) => f.id == userId,
+            );
+            print('Found farmer: ${farmer.fullName} (ID: ${farmer.id})');
+            return farmer;
+          } catch (e) {
+
+            print(' Farmer with ID $userId not found in list');
+            return null;
+          }
+        }
+      }
+    } catch (e) {
+      print(' Could not get owner $ownerId: $e');
+    }
+    return null;
+  }
   Future<void> _editFarmer(UserModel farmer) async {
     final languageService =
         Provider.of<LanguageService>(context, listen: false);
@@ -296,7 +260,7 @@ class _FarmersListScreenState extends State<FarmersListScreen> {
                 final response = await _apiService.patch(
                   '${AppConstants.users}${farmer.id}/',
                   {
-                    'full_name': nameController.text,
+                    'first_name': nameController.text,
                     'phone': phoneController.text,
                     'email': emailController.text,
                     'location': locationController.text,
@@ -356,9 +320,7 @@ class _FarmersListScreenState extends State<FarmersListScreen> {
 
     if (confirm != true) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
       final response =
@@ -380,9 +342,7 @@ class _FarmersListScreenState extends State<FarmersListScreen> {
           backgroundColor: Colors.red,
         ),
       );
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
@@ -395,18 +355,14 @@ class _FarmersListScreenState extends State<FarmersListScreen> {
       selectedIndex: 1,
       child: Column(
         children: [
-          // Search Bar with Refresh Button
+  
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                    },
+                    onChanged: (value) => setState(() => _searchQuery = value),
                     decoration: InputDecoration(
                       hintText: languageService.translate('search_farmer'),
                       prefixIcon: const Icon(Icons.search),
@@ -474,11 +430,9 @@ class _FarmersListScreenState extends State<FarmersListScreen> {
                             itemCount: _filteredFarmers.length,
                             itemBuilder: (context, index) {
                               final farmer = _filteredFarmers[index];
-                              final animalCount = _animalCounts[farmer.id] ??
-                                  _farmerAnimals[farmer.id]?.length ??
-                                  0;
                               final farmerAnimals =
                                   _farmerAnimals[farmer.id] ?? [];
+                              final animalCount = farmerAnimals.length;
 
                               return Card(
                                 margin: const EdgeInsets.only(bottom: 12),
@@ -488,7 +442,7 @@ class _FarmersListScreenState extends State<FarmersListScreen> {
                                 elevation: 2,
                                 child: Column(
                                   children: [
-                                    // Header with actions
+                                    // Header
                                     ListTile(
                                       leading: CircleAvatar(
                                         radius: 28,
@@ -518,10 +472,12 @@ class _FarmersListScreenState extends State<FarmersListScreen> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          Text(farmer.phoneNumber.isNotEmpty
-                                              ? farmer.phoneNumber
-                                              : languageService.translate(
-                                                  'phone_not_available')),
+                                          Text(
+                                            farmer.phoneNumber.isNotEmpty
+                                                ? farmer.phoneNumber
+                                                : languageService.translate(
+                                                    'phone_not_available'),
+                                          ),
                                           const SizedBox(height: 4),
                                           Container(
                                             padding: const EdgeInsets.symmetric(
@@ -575,10 +531,11 @@ class _FarmersListScreenState extends State<FarmersListScreen> {
                                                     color: Colors.red),
                                                 const SizedBox(width: 8),
                                                 Text(
-                                                    languageService
-                                                        .translate('delete'),
-                                                    style: const TextStyle(
-                                                        color: Colors.red)),
+                                                  languageService
+                                                      .translate('delete'),
+                                                  style: const TextStyle(
+                                                      color: Colors.red),
+                                                ),
                                               ],
                                             ),
                                           ),
@@ -586,7 +543,7 @@ class _FarmersListScreenState extends State<FarmersListScreen> {
                                       ),
                                     ),
 
-                                    // Expandable details
+                                    // Expandable Details
                                     ExpansionTile(
                                       iconColor: Colors.blue,
                                       collapsedIconColor: Colors.blue,
@@ -595,8 +552,9 @@ class _FarmersListScreenState extends State<FarmersListScreen> {
                                             .translate('full_details')
                                             .toUpperCase(),
                                         style: const TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600),
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                       children: [
                                         Padding(
@@ -605,6 +563,7 @@ class _FarmersListScreenState extends State<FarmersListScreen> {
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
+                                              // Basic Information
                                               Text(
                                                 languageService
                                                     .translate(

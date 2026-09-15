@@ -1,12 +1,18 @@
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/language_service.dart';
+import '../services/animal_proximity_alarm_service.dart';
 import '../models/user_model.dart';
 import '../widgets/language_selector.dart';
 import 'login_screen.dart';
 import 'farmer/profile_screen.dart';
-import 'farmer/animal_list_screen.dart'; // Add this import
+import 'farmer/animal_list_screen.dart';
+import 'farmer/family_members_screen.dart';
+import 'farmer/add_animal_screen.dart';
+import 'farmer/transfer_requests_screen.dart';
+import 'farmer/alerts_screen.dart';
 
 class BaseScreen extends StatefulWidget {
   final Widget child;
@@ -39,7 +45,6 @@ class _BaseScreenState extends State<BaseScreen> {
     setState(() {});
   }
 
-  // ========== ADD THIS METHOD ==========
   void _navigateToAnimalsScreen() {
     Navigator.push(
       context,
@@ -48,74 +53,22 @@ class _BaseScreenState extends State<BaseScreen> {
       ),
     );
   }
-  // ====================================
 
-  void _showProfileMenu() {
-    final languageService =
-        Provider.of<LanguageService>(context, listen: false);
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  void _navigateToFamilyMembers() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const FamilyMembersScreen(),
       ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.green.shade100,
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(Icons.person, size: 50, color: Colors.green),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _currentUser?.fullName ?? languageService.translate('user'),
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                _currentUser?.phoneNumber ?? '',
-                style: TextStyle(color: Colors.grey.shade600),
-              ),
-              const Divider(height: 24),
-              ListTile(
-                leading: const Icon(Icons.person_outline, color: Colors.green),
-                title: Text(languageService.translate('my_profile')),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                  );
-                },
-              ),
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.logout, color: Colors.red),
-                title: Text(
-                  languageService.translate('logout'),
-                  style: const TextStyle(color: Colors.red),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _logout();
-                },
-              ),
-            ],
-          ),
-        );
-      },
+    );
+  }
+
+  void _navigateToProfile() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ProfileScreen(),
+      ),
     );
   }
 
@@ -144,6 +97,7 @@ class _BaseScreenState extends State<BaseScreen> {
 
     if (confirm != true) return;
 
+    await AnimalProximityAlarmService.instance.stop();
     await _authService.logout();
     if (mounted) {
       Navigator.pushAndRemoveUntil(
@@ -252,7 +206,6 @@ class _BaseScreenState extends State<BaseScreen> {
                       },
                     ),
 
-                    // ========== FARMER MENU ITEMS ==========
                     if (isFarmer) ...[
                       _buildDrawerItem(
                         icon: Icons.pets,
@@ -261,7 +214,7 @@ class _BaseScreenState extends State<BaseScreen> {
                         isSelected: widget.selectedIndex == 1,
                         onTap: () {
                           Navigator.pop(context);
-                          _navigateToAnimalsScreen(); // Now this works
+                          _navigateToAnimalsScreen();
                         },
                       ),
                       _buildDrawerItem(
@@ -271,8 +224,12 @@ class _BaseScreenState extends State<BaseScreen> {
                         isSelected: widget.selectedIndex == 2,
                         onTap: () {
                           Navigator.pop(context);
-                          Navigator.pushReplacementNamed(
-                              context, '/farmer/add_animal');
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AddAnimalScreen(),
+                            ),
+                          );
                         },
                       ),
                       _buildDrawerItem(
@@ -282,8 +239,13 @@ class _BaseScreenState extends State<BaseScreen> {
                         isSelected: widget.selectedIndex == 3,
                         onTap: () {
                           Navigator.pop(context);
-                          Navigator.pushReplacementNamed(
-                              context, '/farmer/transfers');
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const TransferRequestsScreen(),
+                            ),
+                          );
                         },
                       ),
                       _buildDrawerItem(
@@ -293,8 +255,22 @@ class _BaseScreenState extends State<BaseScreen> {
                         isSelected: widget.selectedIndex == 4,
                         onTap: () {
                           Navigator.pop(context);
-                          Navigator.pushReplacementNamed(
-                              context, '/farmer/alerts');
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AlertsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildDrawerItem(
+                        icon: Icons.family_restroom,
+                        title: 'Family Members',
+                        titleKey: 'family_members_menu',
+                        isSelected: widget.selectedIndex == 5,
+                        onTap: () {
+                          Navigator.pop(context);
+                          _navigateToFamilyMembers();
                         },
                       ),
                     ],
@@ -358,7 +334,7 @@ class _BaseScreenState extends State<BaseScreen> {
                       ),
                       _buildDrawerItem(
                         icon: Icons.security,
-                        title: 'Police',
+                        title: 'Law Enforcement',
                         titleKey: 'police_menu',
                         isSelected: widget.selectedIndex == 7,
                         onTap: () {
@@ -369,7 +345,7 @@ class _BaseScreenState extends State<BaseScreen> {
                       ),
                     ],
 
-                    // ========== POLICE MENU ITEMS ==========
+       
                     if (isPolice) ...[
                       _buildDrawerItem(
                         icon: Icons.warning,
@@ -405,11 +381,7 @@ class _BaseScreenState extends State<BaseScreen> {
                       isSelected: false,
                       onTap: () {
                         Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const ProfileScreen()),
-                        );
+                        _navigateToProfile();
                       },
                     ),
 
@@ -451,22 +423,157 @@ class _BaseScreenState extends State<BaseScreen> {
           LanguageSelector(
             onLanguageChanged: (code) => languageService.setLanguage(code),
           ),
-          GestureDetector(
-            onTap: _showProfileMenu,
+          PopupMenuButton<String>(
+            offset: const Offset(0, 10),
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Container(
               margin: const EdgeInsets.only(right: 12),
-              child: const CircleAvatar(
+              child: CircleAvatar(
                 radius: 18,
                 backgroundColor: Colors.white,
-                child: Icon(Icons.person, size: 20, color: Color(0xFF2E7D32)),
+                child: Text(
+                  _currentUser?.initials ?? 'U',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2E7D32),
+                  ),
+                ),
               ),
             ),
+            onSelected: (value) {
+              switch (value) {
+                case 'profile':
+                  _navigateToProfile();
+                  break;
+                case 'family':
+                  _navigateToFamilyMembers();
+                  break;
+                case 'logout':
+                  _logout();
+                  break;
+              }
+            },
+            itemBuilder: (context) {
+              final isFarmer = _currentUser?.role == 'FARMER';
+              final items = <PopupMenuEntry<String>>[
+                PopupMenuItem<String>(
+                  enabled: false,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _currentUser?.fullName ?? 'User',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        _currentUser?.phoneNumber ?? '',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        margin: const EdgeInsets.only(top: 4),
+                        decoration: BoxDecoration(
+                          color: _getRoleColor(_currentUser?.role)
+                              .withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _getRoleName(_currentUser?.role),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: _getRoleColor(_currentUser?.role),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem<String>(
+                  value: 'profile',
+                  child: Row(
+                    children: [
+                      Icon(Icons.person_outline, color: Colors.green, size: 20),
+                      SizedBox(width: 12),
+                      Text('My Profile'),
+                    ],
+                  ),
+                ),
+                if (isFarmer)
+                  const PopupMenuItem<String>(
+                    value: 'family',
+                    child: Row(
+                      children: [
+                        Icon(Icons.family_restroom,
+                            color: Colors.green, size: 20),
+                        SizedBox(width: 12),
+                        Text('Family Members'),
+                      ],
+                    ),
+                  ),
+                const PopupMenuDivider(),
+                const PopupMenuItem<String>(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, color: Colors.red, size: 20),
+                      SizedBox(width: 12),
+                      Text(
+                        'Logout',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ],
+                  ),
+                ),
+              ];
+              return items;
+            },
           ),
         ],
         elevation: 0,
       ),
       body: widget.child,
     );
+  }
+
+  String _getRoleName(String? role) {
+    switch (role) {
+      case 'FARMER':
+        return '👨‍🌾 Farmer';
+      case 'AG_OFFICER':
+        return '👨‍💼 Admin';
+      case 'POLICE':
+        return '👮 Police Officer';
+      default:
+        return 'User';
+    }
+  }
+
+  Color _getRoleColor(String? role) {
+    switch (role) {
+      case 'FARMER':
+        return Colors.green;
+      case 'AG_OFFICER':
+        return Colors.blue;
+      case 'POLICE':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 
   Widget _buildDrawerItem({

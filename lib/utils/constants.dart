@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppConstants {
-  static const String baseUrl = 'http://192.168.0.11:8000';
+  static const String baseUrl = 'http://10.92.220.153:8000';
   static const String apiUrl = '$baseUrl/api';
 
   static const String mediaUrl = '$baseUrl/media/';
@@ -11,24 +11,28 @@ class AppConstants {
 
   static const String users = '$apiUrl/users/';
   static const String farmers = '$apiUrl/users/farmers/';
+  static const String police = '$apiUrl/users/police/';
   static const String me = '$apiUrl/users/me/';
 
-  static const String police = '$apiUrl/users/police/';
+  static const String searchByPhone = '$apiUrl/users/search_by_phone/';
+  static const String owners = '$apiUrl/owners/';
+  static String getFamilyMembers(int ownerId) =>
+      '$apiUrl/owners/$ownerId/members/';
+  static String getAddMember(int ownerId) =>
+      '$apiUrl/owners/$ownerId/add_member/';
+  static String getRemoveMember(int ownerId) =>
+      '$apiUrl/owners/$ownerId/remove_member/';
+  static const String ownerMe = '$apiUrl/owners/me/';
+  static String getRegisterFamilyMember(int ownerId) =>
+      '$apiUrl/owners/$ownerId/register_family_member/';
 
   static const String animals = '$apiUrl/animals/';
-
   static const String devices = '$apiUrl/devices/';
-
   static const String locations = '$apiUrl/locations/';
-
   static const String transfers = '$apiUrl/transfers/';
-
   static const String alerts = '$apiUrl/alerts/';
-
   static const String broadcasts = '$apiUrl/broadcasts/';
-
   static const String reports = '$apiUrl/reports/';
-
   static const String activityLogs = '$apiUrl/activity-logs/';
 
   static const String tokenKey = 'access_token';
@@ -40,6 +44,9 @@ class AppConstants {
   static const int locationUpdateInterval = 30;
   static const int lostAnimalThresholdMinutes = 30;
   static const double lostAnimalThresholdDistance = 200.0;
+  static const double proximityAlarmDistanceMeters = 30.0;
+  static const double proximityAlarmIgnoreAccuracyMeters = 20.0;
+  static const int proximityAlarmCheckIntervalSeconds = 15;
   static const int transferExpiryDays = 7;
   static const int maxLocationHistoryDays = 30;
   static const int maxAnimalsPerPage = 20;
@@ -59,6 +66,7 @@ class AppConstants {
     'CHICKEN': 'Kuku',
     'OTHER': 'Other',
   };
+
   static const Map<String, String> animalStatusNames = {
     'ACTIVE': 'Active',
     'SOLD': 'Sold',
@@ -75,7 +83,6 @@ class AppConstants {
     'STOLEN': Color(0xFFD32F2F),
   };
 
-  //  ALERT TYPES
   static const Map<String, String> alertTypeIcons = {
     'LOST': '',
     'THEFT': '',
@@ -95,7 +102,6 @@ class AppConstants {
   static const int minPasswordLength = 6;
   static const int maxPhoneLength = 13;
   static const String phoneRegex = r'^(0\+?255)\d{9}$';
-
   static const int maxImageSizeMB = 5;
   static const List<String> allowedImageExtensions = [
     'jpg',
@@ -103,8 +109,8 @@ class AppConstants {
     'png',
     'gif'
   ];
-
   static const int cacheDurationMinutes = 5;
+
 
   static const String errorNetwork = 'network error';
   static const String errorServer = 'server error';

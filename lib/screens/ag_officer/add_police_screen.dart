@@ -15,8 +15,11 @@ class AddPoliceScreen extends StatefulWidget {
 
 class _AddPoliceScreenState extends State<AddPoliceScreen> {
   final ApiService _apiService = ApiService();
+
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _middleNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -29,13 +32,121 @@ class _AddPoliceScreenState extends State<AddPoliceScreen> {
   String? _errorMessage;
   String? _successMessage;
 
-  // Function to clean phone number
+  String? _validateName(String? value, String fieldName) {
+    if (value == null || value.trim().isEmpty) {
+      return '$fieldName is required';
+    }
+    final trimmed = value.trim();
+    if (trimmed.length < 3) {
+      return '$fieldName must be at least 3 characters';
+    }
+    if (trimmed.length > 10) {
+      return '$fieldName must be less than 10 characters';
+    }
+    if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(trimmed)) {
+      return '$fieldName can only contain letters';
+    }
+    return null;
+  }
+
+  String? _validatePhone(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Phone number is required';
+    }
+
+    String cleaned = value.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (cleaned.startsWith('255')) {
+      cleaned = cleaned.substring(3);
+    } else if (cleaned.startsWith('0')) {
+      cleaned = cleaned.substring(1);
+    }
+
+    if (cleaned.length != 9) {
+      return 'Phone number must be 9 digits';
+    }
+
+
+    final validPrefixes = [
+      '71', '74', '75', '76', // Vodacom
+      '78', '79', // Airtel
+      '65', '66', '67', '68', '69', '70', // Tigo (yas)
+      '61', '62', // Halotel
+    ];
+
+    final prefix = cleaned.substring(0, 2);
+    if (!validPrefixes.contains(prefix)) {
+      return 'Invalid network prefix. Use Vodacom, Airtel, Tigo (yas), or Halotel';
+    }
+
+    return null;
+  }
+
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null; 
+    }
+    final email = value.trim();
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      return 'Please enter a valid email address';
+    }
+    return null;
+  }
+
+  String? _validateLocation(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null; 
+    }
+    if (value.trim().length < 3) {
+      return 'Location must be at least 3 characters';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Password is required';
+    }
+    if (value.length < 8) {
+      return 'Password must be at least 8 characters';
+    }
+    if (!RegExp(r'[A-Z]').hasMatch(value)) {
+      return 'Password must contain at least one uppercase letter';
+    }
+    if (!RegExp(r'[a-z]').hasMatch(value)) {
+      return 'Password must contain at least one lowercase letter';
+    }
+    if (!RegExp(r'[0-9]').hasMatch(value)) {
+      return 'Password must contain at least one number';
+    }
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+      return 'Password must contain at least one special character (!@#\$%^&*(),.?":{}|<>)';
+    }
+    return null;
+  }
+
+
+  String? _validateConfirmPassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please confirm your password';
+    }
+    if (value != _passwordController.text) {
+      return 'Passwords do not match';
+    }
+    return null;
+  }
+
   String _cleanPhoneNumber(String phone) {
     String cleaned = phone.replaceAll(RegExp(r'[^0-9]'), '');
     if (cleaned.startsWith('0')) {
       cleaned = '255${cleaned.substring(1)}';
     } else if (cleaned.startsWith('7') || cleaned.startsWith('6')) {
       cleaned = '255$cleaned';
+    } else if (!cleaned.startsWith('255')) {
+      if (cleaned.length == 9) {
+        cleaned = '255$cleaned';
+      }
     }
     if (cleaned.length > 12) {
       cleaned = cleaned.substring(0, 12);
@@ -43,27 +154,40 @@ class _AddPoliceScreenState extends State<AddPoliceScreen> {
     return cleaned;
   }
 
+
   Future<void> _addPolice() async {
-    if (_phoneController.text.isEmpty ||
-        _fullNameController.text.isEmpty ||
-        _passwordController.text.isEmpty ||
-        _confirmPasswordController.text.isEmpty) {
-      setState(() {
-        _errorMessage = context.tr('all_required_fields');
-      });
-      return;
-    }
 
-    if (_passwordController.text != _confirmPasswordController.text) {
-      setState(() {
-        _errorMessage = context.tr('passwords_do_not_match');
-      });
-      return;
-    }
+    final firstNameError =
+        _validateName(_firstNameController.text, 'First name');
+    final lastNameError = _validateName(_lastNameController.text, 'Last name');
+    final middleNameError = _middleNameController.text.isNotEmpty
+        ? _validateName(_middleNameController.text, 'Middle name')
+        : null;
+    final phoneError = _validatePhone(_phoneController.text);
+    final emailError = _validateEmail(_emailController.text);
+    final locationError = _validateLocation(_locationController.text);
+    final passwordError = _validatePassword(_passwordController.text);
+    final confirmPasswordError =
+        _validateConfirmPassword(_confirmPasswordController.text);
 
-    if (_passwordController.text.length < 6) {
+    if (firstNameError != null ||
+        lastNameError != null ||
+        middleNameError != null ||
+        phoneError != null ||
+        emailError != null ||
+        locationError != null ||
+        passwordError != null ||
+        confirmPasswordError != null) {
       setState(() {
-        _errorMessage = context.tr('password_min_length');
+        _errorMessage = firstNameError ??
+            lastNameError ??
+            middleNameError ??
+            phoneError ??
+            emailError ??
+            locationError ??
+            passwordError ??
+            confirmPasswordError ??
+            context.tr('all_required_fields');
       });
       return;
     }
@@ -74,35 +198,50 @@ class _AddPoliceScreenState extends State<AddPoliceScreen> {
       _successMessage = null;
     });
 
-    // Clean phone number
     final cleanPhone = _cleanPhoneNumber(_phoneController.text);
+    final middleName = _middleNameController.text.trim().isNotEmpty
+        ? _middleNameController.text.trim()
+        : null;
 
     try {
-      print('📱 Creating police officer with phone: $cleanPhone');
-      print('📱 Name: ${_fullNameController.text}');
+      print('Creating police officer:');
+      print('   Phone: $cleanPhone');
+      print('   First: ${_firstNameController.text}');
+      print('   Middle: $middleName');
+      print('   Last: ${_lastNameController.text}');
 
-      final response =
-          await _apiService.post('${AppConstants.users}create_police/', {
-        'phone': cleanPhone,
-        'first_name': _fullNameController.text,
-        'email': _emailController.text,
-        'location': _locationController.text,
-        'password': _passwordController.text,
-        'confirm_password': _confirmPasswordController.text,
-        'role': 'POLICE',
-      });
+      final response = await _apiService.post(
+        '${AppConstants.users}create_police/',
+        {
+          'phone': cleanPhone,
+          'first_name': _firstNameController.text.trim(),
+          'middle_name': middleName,
+          'last_name': _lastNameController.text.trim(),
+          'email': _emailController.text.trim().isNotEmpty
+              ? _emailController.text.trim()
+              : null,
+          'location': _locationController.text.trim().isNotEmpty
+              ? _locationController.text.trim()
+              : null,
+          'password': _passwordController.text,
+          'confirm_password': _confirmPasswordController.text,
+          'role': 'POLICE',
+        },
+      );
 
       print('📥 Response status: ${response.statusCode}');
       print('📥 Response data: ${response.data}');
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 201 || response.statusCode == 200) {
         setState(() {
           _successMessage = context.tr('police_added_success');
         });
 
         // Clear form
+        _firstNameController.clear();
+        _middleNameController.clear();
+        _lastNameController.clear();
         _phoneController.clear();
-        _fullNameController.clear();
         _emailController.clear();
         _locationController.clear();
         _passwordController.clear();
@@ -115,12 +254,13 @@ class _AddPoliceScreenState extends State<AddPoliceScreen> {
         });
       } else {
         setState(() {
-          _errorMessage =
-              response.data['error'] ?? context.tr('police_add_failed');
+          _errorMessage = response.data['message'] ??
+              response.data['error'] ??
+              context.tr('police_add_failed');
         });
       }
     } catch (e) {
-      print('❌ Error: $e');
+      print('Error: $e');
       setState(() {
         _errorMessage = '${context.tr('error')}: $e';
       });
@@ -138,7 +278,7 @@ class _AddPoliceScreenState extends State<AddPoliceScreen> {
 
     return BaseScreen(
       title: 'Add Police Officer',
-      selectedIndex: 7, // Index for Police in menu (Ag Officer)
+      selectedIndex: 7, 
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -184,124 +324,106 @@ class _AddPoliceScreenState extends State<AddPoliceScreen> {
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
-                    // Full Name
-                    TextField(
-                      controller: _fullNameController,
-                      decoration: InputDecoration(
-                        labelText: languageService.translate('full_name'),
-                        prefixIcon:
-                            const Icon(Icons.person, color: Colors.deepPurple),
-                        border: const OutlineInputBorder(),
-                      ),
+                    // First Name
+                    _buildTextField(
+                      controller: _firstNameController,
+                      icon: Icons.person,
+                      label: 'First Name *',
+                      hint: 'Enter first name',
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Middle Name (Optional)
+                    _buildTextField(
+                      controller: _middleNameController,
+                      icon: Icons.person_outline,
+                      label: 'Middle Name (Optional)',
+                      hint: 'Enter middle name (optional)',
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Last Name
+                    _buildTextField(
+                      controller: _lastNameController,
+                      icon: Icons.person_add,
+                      label: 'Last Name *',
+                      hint: 'Enter last name',
                     ),
                     const SizedBox(height: 16),
 
                     // Phone Number
-                    TextField(
+                    _buildTextField(
                       controller: _phoneController,
+                      icon: Icons.phone,
+                      label: 'Phone Number *',
+                      hint: 'Enter phone number',
                       keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        labelText: languageService.translate('phone_number'),
-                        prefixIcon:
-                            const Icon(Icons.phone, color: Colors.deepPurple),
-                        border: const OutlineInputBorder(),
-                        helperText: languageService.translate('phone_helper'),
-                        helperStyle: const TextStyle(fontSize: 11),
-                      ),
+                      helperText: 'Example: 255712345678 or 0712345678',
                     ),
                     const SizedBox(height: 16),
 
-                    // Email
-                    TextField(
+                    // Email (Optional)
+                    _buildTextField(
                       controller: _emailController,
+                      icon: Icons.email,
+                      label: 'Email (Optional)',
+                      hint: 'Enter email address (optional)',
                       keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        labelText:
-                            '${languageService.translate('email')} (${languageService.translate('optional')})',
-                        prefixIcon:
-                            const Icon(Icons.email, color: Colors.deepPurple),
-                        border: const OutlineInputBorder(),
-                      ),
                     ),
                     const SizedBox(height: 16),
 
-                    // Location
-                    TextField(
+                    // Location (Optional)
+                    _buildTextField(
                       controller: _locationController,
-                      decoration: InputDecoration(
-                        labelText: languageService.translate('work_location'),
-                        prefixIcon: const Icon(Icons.location_on,
-                            color: Colors.deepPurple),
-                        border: const OutlineInputBorder(),
-                      ),
+                      icon: Icons.location_on,
+                      label: 'Work Location (Optional)',
+                      hint: 'Enter work location (optional)',
                     ),
                     const SizedBox(height: 16),
 
                     // Password
-                    TextField(
+                    _buildTextField(
                       controller: _passwordController,
+                      icon: Icons.lock,
+                      label: 'Password *',
+                      hint: 'Enter password (min 8 chars)',
                       obscureText: _obscurePassword,
-                      decoration: InputDecoration(
-                        labelText: languageService.translate('password'),
-                        prefixIcon:
-                            const Icon(Icons.lock, color: Colors.deepPurple),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                            color: Colors.deepPurple,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                        ),
-                        border: const OutlineInputBorder(),
-                        helperText:
-                            languageService.translate('password_min_length'),
-                        helperStyle: const TextStyle(fontSize: 11),
-                      ),
+                      isPassword: true,
+                      onSuffixTap: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                      helperText: '8+ chars: A-Z, a-z, 0-9, !@#',
                     ),
                     const SizedBox(height: 16),
 
                     // Confirm Password
-                    TextField(
+                    _buildTextField(
                       controller: _confirmPasswordController,
+                      icon: Icons.lock_outline,
+                      label: 'Confirm Password *',
+                      hint: 'Confirm your password',
                       obscureText: _obscureConfirmPassword,
-                      decoration: InputDecoration(
-                        labelText:
-                            languageService.translate('confirm_password'),
-                        prefixIcon: const Icon(Icons.lock_outline,
-                            color: Colors.deepPurple),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureConfirmPassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                            color: Colors.deepPurple,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _obscureConfirmPassword =
-                                  !_obscureConfirmPassword;
-                            });
-                          },
-                        ),
-                        border: const OutlineInputBorder(),
-                      ),
+                      isPassword: true,
+                      onSuffixTap: () {
+                        setState(() {
+                          _obscureConfirmPassword = !_obscureConfirmPassword;
+                        });
+                      },
                     ),
                   ],
                 ),
               ),
             ),
 
+            // Error Message
             if (_errorMessage != null)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
@@ -328,14 +450,18 @@ class _AddPoliceScreenState extends State<AddPoliceScreen> {
                             _errorMessage = null;
                           });
                         },
-                        child: Icon(Icons.close,
-                            size: 18, color: Colors.red.shade400),
+                        child: Icon(
+                          Icons.close,
+                          size: 18,
+                          color: Colors.red.shade400,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
 
+            // Success Message
             if (_successMessage != null)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
@@ -362,8 +488,11 @@ class _AddPoliceScreenState extends State<AddPoliceScreen> {
                             _successMessage = null;
                           });
                         },
-                        child: Icon(Icons.close,
-                            size: 18, color: Colors.green.shade400),
+                        child: Icon(
+                          Icons.close,
+                          size: 18,
+                          color: Colors.green.shade400,
+                        ),
                       ),
                     ],
                   ),
@@ -399,6 +528,43 @@ class _AddPoliceScreenState extends State<AddPoliceScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ==================== CUSTOM TEXT FIELD WIDGET ====================
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required IconData icon,
+    required String label,
+    required String hint,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscureText = false,
+    bool isPassword = false,
+    VoidCallback? onSuffixTap,
+    String? helperText,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixIcon: Icon(icon, color: Colors.deepPurple),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  obscureText ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.deepPurple,
+                ),
+                onPressed: onSuffixTap,
+              )
+            : null,
+        border: const OutlineInputBorder(),
+        helperText: helperText,
+        helperStyle: const TextStyle(fontSize: 11),
       ),
     );
   }

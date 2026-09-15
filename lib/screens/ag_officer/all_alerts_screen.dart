@@ -43,15 +43,15 @@ class _AllAlertsScreenState extends State<AllAlertsScreen> {
     try {
       final response = await _apiService.get(AppConstants.alerts);
 
-      print('📥 Alerts response status: ${response.statusCode}');
+      print(' Alerts response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data['results'] ?? [];
         _alerts = data.map((json) => AlertModel.fromJson(json)).toList();
-        print('✅ Loaded ${_alerts.length} alerts');
+        print(' Loaded ${_alerts.length} alerts');
       }
     } catch (e) {
-      print('❌ Error loading alerts: $e');
+      print(' Error loading alerts: $e');
       setState(() {
         _errorMessage = e.toString();
       });
@@ -73,10 +73,10 @@ class _AllAlertsScreenState extends State<AllAlertsScreen> {
 
     return BaseScreen(
       title: 'All Alerts',
-      selectedIndex: 5, // Index for Alerts in menu (Ag Officer)
+      selectedIndex: 5, 
       child: Column(
         children: [
-          // Filter Chips
+
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.all(12),

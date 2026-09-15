@@ -30,7 +30,6 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
   String? _selectedStatus;
   File? _selectedImage;
 
-  // Controllers for editing
   late TextEditingController _nameController;
   late TextEditingController _colorController;
   late TextEditingController _notesController;
@@ -94,16 +93,14 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
     });
 
     try {
-      // ========== FIXED: Create FormData correctly ==========
+
       final formData = FormData();
 
-      // Add text fields
       formData.fields.add(MapEntry('name', _nameController.text.trim()));
       formData.fields.add(MapEntry('type', _selectedType));
       formData.fields.add(MapEntry('color', _colorController.text.trim()));
       formData.fields.add(MapEntry('notes', _notesController.text.trim()));
 
-      // Add image if selected
       if (_selectedImage != null) {
         final fileName = _selectedImage!.path.split('/').last;
         formData.files.add(
@@ -116,8 +113,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
           ),
         );
       }
-      // ======================================================
-
+    
       final response = await _apiService.putMultipart(
         '${AppConstants.animals}${widget.animal.id}/',
         formData,
@@ -182,7 +178,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
   }
 
   Future<void> _deleteAnimal() async {
-    // Confirmation dialog
+ 
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -360,7 +356,6 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
 
           const SizedBox(height: 24),
 
-          // Animal Info Card
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -402,7 +397,6 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
 
           const SizedBox(height: 16),
 
-          // Status Update
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -469,7 +463,6 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
 
           const SizedBox(height: 16),
 
-          // Action Buttons
           Row(
             children: [
               Expanded(
@@ -553,7 +546,6 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Photo picker
           Center(
             child: GestureDetector(
               onTap: _pickImage,
@@ -602,7 +594,6 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
 
           const SizedBox(height: 24),
 
-          // Animal Name
           TextField(
             controller: _nameController,
             decoration: InputDecoration(
@@ -613,7 +604,6 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Animal Type
           DropdownButtonFormField<String>(
             value: _selectedType,
             decoration: InputDecoration(
@@ -635,7 +625,6 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Color
           TextField(
             controller: _colorController,
             decoration: InputDecoration(
@@ -646,7 +635,6 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Notes
           TextField(
             controller: _notesController,
             maxLines: 3,
