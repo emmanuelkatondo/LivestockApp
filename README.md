@@ -1,4 +1,4 @@
-# 🐄 Livestock Tracking & Management System (LivestockApp)
+# Livestock Tracking & Management System (LivestockApp)
 
 An end-to-end IoT-enabled platform designed for real-time livestock tracking, health monitoring, and farm management. This repository integrates a **Django REST Framework** backend API with a **Flutter** cross-platform mobile application, leveraging GPS/GSM telemetry data to streamline livestock operations.
 
